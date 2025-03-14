@@ -1,0 +1,12 @@
+{
+    "compilerOptions": {
+      "baseUrl": ".",
+      "paths": {
+        "@http/*": ["http-backend/src/*"],
+        "@zod/*": ["zodvalidation/src/*"],
+        "@db/*": ["database/src/*"],
+        "@ws/*": ["ws-backend/src/*"]
+      }
+    },
+    // "include": ["http-backend", "zodvalidation", "database", "ws-backend"]
+  }

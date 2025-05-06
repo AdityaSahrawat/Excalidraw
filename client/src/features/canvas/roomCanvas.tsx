@@ -11,7 +11,7 @@ export default function RoomCanvas({roomId} : {roomId :string}){
 
     function connectWebSocket() {
         console.log("📡 Attempting to connect to WebSocket...");
-        const ws = new WebSocket(`${WS_SERVER}?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InRyeTFAYXNkLmNvbSIsImlkIjoiZGJiMGQyNTUtNDQ5NC00MThkLThiYTktOTE3ZTdmMjhmNDBiIiwiaWF0IjoxNzQxOTU4Njc0fQ.MtK2Iu_GDEkiQc0ZB52UMMZ6tbuHpth_AarSZrNjrok`);
+        const ws = new WebSocket(`${WS_SERVER}?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InAzQGdtYWlsLmNvbSIsImlkIjoiMGUxMWQyNTQtODZlYi00OGQxLThlMWYtMTFkYTVmNGUxODRhIiwiaWF0IjoxNzQ2MjU5NjEyfQ.emkBPudS2ui14mo2XV0CHMq9AmrzICyiJGv5u4dl1EE`);
 
         ws.onopen = () => {
             console.log("✅ WebSocket Connected!");
@@ -29,6 +29,7 @@ export default function RoomCanvas({roomId} : {roomId :string}){
         ws.onclose = (event) => {
             console.warn(`⚠️ WebSocket closed. Reason: ${event.reason} (Code: ${event.code})`);
             // setTimeout(connectWebSocket, 3000); // Reconnect after 3 seconds
+            
         };
 
         return ws;

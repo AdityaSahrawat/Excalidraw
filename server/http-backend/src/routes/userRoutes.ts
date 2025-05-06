@@ -8,15 +8,16 @@ const saltRound = process.env.SALTROUNDS || 5
 
 
 userRouter.post("/signup", async(req: Request, res: Response) => {
-    const parseData = userSchema.safeParse(req.body);
-
-    if (!parseData.success) {
-        res.status(400).json({ message: "Incorrect inputs" });
-    }
+    // const parseData = userSchema.safeParse(req.body);
+    // console.log("0")
+    // if (!parseData.success) {
+    //     res.status(400).json({ message: "Incorrect inputs" });
+    // }
     const {username , email , password} = req.body 
     
     
     try {
+        console.log("1")
         const user = await prismaClient.user.create({
             data: {
                 email,

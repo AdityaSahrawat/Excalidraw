@@ -5,6 +5,7 @@ import RoomCanvas from "@/features/canvas/roomCanvas";
 
 export default function CanvasPage({ params }: { params: Promise<{ roomId: string }> }) {
     const { roomId } = use(params);  // ✅ Unwrap params using use()
+    console.log("called CanvasPage" , Math.random())
 
     return <RoomCanvas roomId={roomId} />;
 }

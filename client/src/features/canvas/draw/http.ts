@@ -3,14 +3,13 @@ import axios from "axios"
 
 
 export async function getExistingShapes (rootId :String){
-    const response = await axios.get(`${http_backend}/v1/web/chats/${rootId}`)
-    console.log(response)
-    const shapesArray = response.data.chats
+    const response = await axios.get(`${http_backend}/v1/web/element/${rootId}`)
+    const shapesArray = response.data.elements
     if (!shapesArray){
         return []
     }
-    const shapes = shapesArray.map( (x: {message: string})=>{
-        const shapeData = JSON.parse(x.message);
+    const shapes = shapesArray.map( (x: {shape: string})=>{
+        const shapeData = JSON.parse(x.shape);
         return shapeData
     })
 

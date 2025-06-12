@@ -1,24 +1,46 @@
-import initDraw from "@/features/canvas/draw/index"
+
 import { useEffect, useRef, useState } from "react";
 import { IconButtons } from "./iconline";
-import { Circle, Pencil, RectangleHorizontalIcon ,PenLine , ArrowRight  } from "lucide-react";
+import { Circle, Pencil, RectangleHorizontalIcon ,PenLine , ArrowRight , MousePointer , Hand  } from "lucide-react";
 
-import { AllSahpes } from "./types";
+import { AllSahpes, Shape } from "./types";
+import initDraw from "./draw";
 
 export function Canvas({roomId , socket} : {roomId: string, socket : WebSocket}){
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const [selectedTool , setSelectedTool] = useState<AllSahpes>("Rect")
+    // const [selectedShape, setSelectedShape] = useState<Shape | null>(null);
+    console.log("called Canvas" , Math.random())
 
     useEffect ( ()=>{
         // @ts-ignore // check
         window.selectedTool = selectedTool
     } , [selectedTool])
 
-    useEffect(()=>{
-        if(canvasRef.current){
-            initDraw(canvasRef.current , roomId , socket);
-        }
-    },[roomId, socket])
+    const initializedRef = useRef(false);
+
+useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !socket || initializedRef.current){
+        console.log("called!!!!!!!!" , initializedRef.current)
+        return
+    } ;
+
+    let cleanupFn: (() => void) | undefined;
+
+    const init = async () => {
+        cleanupFn = await initDraw(canvas, roomId, socket);
+        initializedRef.current = true;
+    };
+
+    init();
+
+    return () => {
+        cleanupFn?.();
+        initializedRef.current = false;
+    };
+}, [roomId, socket]);
+
 
     return (
         <div className="h-[100vh] overflow-hidden relative">
@@ -41,6 +63,8 @@ const TopBar = ({selectedTool , setSelectedTool}:
     return (
         <div className="top-5 left-1/3 fixed">
             <div className="flex gap-5">
+                <IconButtons onClick={ ()=>{ setSelectedTool("Hand")}} icon={<Hand/>} activated={ selectedTool === "Hand"}  />
+                <IconButtons onClick={ ()=>{ setSelectedTool("Pointer")}} icon={<MousePointer/>} activated={ selectedTool === "Pointer"}  />
                 <IconButtons onClick={ ()=>{ setSelectedTool("Line")}} icon={<PenLine/>} activated={ selectedTool === "Line"}  />
                 <IconButtons onClick={ ()=>{setSelectedTool("Rect")}} icon={<RectangleHorizontalIcon/>} activated={ selectedTool === "Rect"}  />
                 <IconButtons onClick={ ()=>{setSelectedTool("Circle")}} icon={<Circle/>} activated={ selectedTool === "Circle"}  />

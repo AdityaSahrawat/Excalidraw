@@ -14,7 +14,7 @@ model User {
   password  String
   avatar    String?
   rooms     Room[] 
-  chats     Chat[]
+  chats     Element[]
 }
 
 model Room {
@@ -23,12 +23,13 @@ model Room {
   cerateAt  DateTime    @default(now())
   adminId   String
   admin     User        @relation(fields: [adminId] , references: [id])
-  chats     Chat[]
+  chats     Element[]
 }
 
-model Chat {
+model Element {
   id      Int       @id @default(autoincrement()) 
-  message String
+  shapeId String    @unique
+  shape String
   roomId  Int       
   userId  String
   room    Room      @relation(fields: [roomId] , references: [id])

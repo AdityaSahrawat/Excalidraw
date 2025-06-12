@@ -1,4 +1,0 @@
-1. ws sending same shape to creator of the shape
-2. If someone is building a shape and someone sends shape using ws then this will be removed (due to clearCanvas fn)
-
-3.

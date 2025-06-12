@@ -28,20 +28,21 @@ webRouter.post('/room', UserMeddleware , async(req, res) => {
     })
 })
 
-webRouter.get('/chats/:roomId' , async (req , res)=>{
+webRouter.get('/element/:roomId' , async (req , res)=>{
 
     try{
         const roomId = Number(req.params.roomId);
-        const chats = await prismaClient.chat.findMany({
+        const elements = await prismaClient.element.findMany({
             where:{
                 roomId : roomId
-            },orderBy:{
-                id : "asc"
             },
-            take:100
+            // orderBy:{
+            //     id : "asc"
+            // },
+            // take:100
         }) 
         res.json({
-            chats
+            elements
         })
     }catch(e){
         console.log(e);

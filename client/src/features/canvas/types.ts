@@ -1,32 +1,58 @@
 export type Shape = {
-    type : "Rect" ,
+    id : string
+    type : 'Rect' ,
     x : number,
     y : number,
     width : number , 
     height : number
 } | {
-    type : "Circle",
+    id : string
+    type : 'Circle',
     x : number ,
     y : number , 
     radius : number
 } | {
-    type : "Line" ,
+    id : string
+    type : 'Line' ,
     x : number,
     y : number ,
-    endx : number ,
+    endx : number , // width
     endy : number
 } | {
-    type: "Pencil",
+    id : string
+    type: 'Pencil',
     points: Array<{x: number, y: number}>,
     color?: string,
     width?: number
 
 } | {
-    type : "Arrow",
+    id : string
+    type : 'Arrow',
     x : number,
     y : number ,
     endx : number ,
     endy : number
 }
 
-export type AllSahpes = "Rect" | "Pencil" | "Circle" | "Line" | "Arrow"
+export type AllSahpes = "Rect" | "Pencil" | "Circle" | "Line" | "Arrow" | "Pointer" | "Hand"
+
+export type State = {
+    existingShapes: Shape[]; // Assuming getExistingShapes returns Shape[]
+    selectedShape: Shape | null;
+    isDrawing: boolean;
+    currentPencilPath: { x: number; y: number }[];
+    clicked: boolean;
+    startX: number;
+    startY: number;
+    offsetX: number;
+    offsetY: number;
+    movedShapeIndex: string; // "-1" as string, or you can use number if it's an index
+    resizeHandle : string | null,
+    endOffsetX : number,
+    endOffsetY : number ,
+    canvasOffsetX : number,
+    canvasOffsetY : number
+    canvasScale : number , 
+    lastPanx : number
+    lastPany : number
+}

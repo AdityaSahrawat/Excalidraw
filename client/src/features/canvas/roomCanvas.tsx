@@ -4,14 +4,35 @@ const WS_SERVER = "ws://localhost:8080"
 import { useEffect, useRef, useState } from "react"
 import { Canvas } from "./canvas";
 
+//p3@gmail.com
+// eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIwZTExZDI1NC04NmViLTQ4ZDEtOGUxZi0xMWRhNWY0ZTE4NGEiLCJpYXQiOjE3NDY4NjIxMDJ9.aGoIFPMZNEXemFZ-MLbAddUziERBtPZQ7kA7O5kO-tI
+
+//p1@gmail.com
+// eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI1YWE3ZGFhOC04MjY1LTRiMGUtYjZjYy0wMjZlMTE3OGZjNWYiLCJpYXQiOjE3NDY4NjIxNjJ9.s-89Ze1BU1vM0GMhwGRf3oxK1AZcnK7QAf60VSx3Fdc
 export default function RoomCanvas({roomId} : {roomId :string}){
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [socket , setSocket] = useState<WebSocket | null>(null);
-
-
+    const [token , setToken] = useState<string | null>(null)
+    console.log("called RoomCanvas" , Math.random())
+    
+    useEffect(() => {
+        const storedToken = localStorage.getItem("token");
+        setToken(storedToken);
+    }, []);
+    useEffect(()=>{
+        if (token) {
+        console.log("Connecting with token:", token);
+        connectWebSocket();
+        }
+    },[token])
     function connectWebSocket() {
-        console.log("📡 Attempting to connect to WebSocket...");
-        const ws = new WebSocket(`${WS_SERVER}?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InAzQGdtYWlsLmNvbSIsImlkIjoiMGUxMWQyNTQtODZlYi00OGQxLThlMWYtMTFkYTVmNGUxODRhIiwiaWF0IjoxNzQ2MjU5NjEyfQ.emkBPudS2ui14mo2XV0CHMq9AmrzICyiJGv5u4dl1EE`);
+         if (!token) {
+            // console.error("WebSocket connection aborted: No token available");
+            return;
+        }
+
+        const wsUrl = `${WS_SERVER}?token=${encodeURIComponent(token || "")}`;
+        const ws = new WebSocket(wsUrl);
 
         ws.onopen = () => {
             console.log("✅ WebSocket Connected!");

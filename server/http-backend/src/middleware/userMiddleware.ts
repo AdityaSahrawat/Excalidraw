@@ -1,30 +1,24 @@
-import  jwt  from "jsonwebtoken";
-import { Request , Response , NextFunction} from "express";
+import jwt from "jsonwebtoken";
+import { Request, Response, NextFunction } from "express";
 
+const jwt_Secret = "123"; // move to process.env.JWT_SECRET in real apps
 
-const jwt_Secret = "123"
+export function UserMiddleware(req: Request, res: Response, next: NextFunction): void {
+  const token = req.cookies?.token;
 
-export function UserMeddleware(req: Request , res: Response , next:NextFunction): void{
-    
-    // const token = req.headers.get("authorization") ?? "";
-    const token = req.headers["authorization"] ?? "";
+  if (!token) {
+    res.status(401).json({ message: "Unauthorized: No token provided" });
+    return 
+  }
 
-
-    if (!token) {
-        res.status(404).json({
-            message: "Unauthorized: No token provided"
-        })
-    }
-    console.log(token)
-    try {
-        const decoded = jwt.verify(token, jwt_Secret) as { id: string };
-        req.userId = decoded.id;
-        // Alternative: (res as any).userId = decoded.id;
-        next();
-    } catch (error) {
-        res.status(401).json({
-            message: "Unauthorized: Invalid or expired token",
-        });
-    }
-
+  try {
+    const decoded = jwt.verify(token, jwt_Secret) as { id: string };
+    req.userId = decoded.id;
+    next();
+  } catch (error) {
+    res.status(401).json({
+      message: "Unauthorized: Invalid or expired token",
+    });
+    return ;
+  }
 }

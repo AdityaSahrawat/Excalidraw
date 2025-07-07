@@ -4,26 +4,38 @@ export type Shape = {
     x : number,
     y : number,
     width : number , 
-    height : number
+    height : number,
+    strokeWidth : number
+    fillColor: string;
+    strokeColor: string;
+    opacity: number;
 } | {
     id : string
     type : 'Circle',
     x : number ,
     y : number , 
-    radius : number
+    radius : number,
+    strokeWidth : number
+    fillColor: string;
+    strokeColor: string;
+    opacity: number;
 } | {
     id : string
     type : 'Line' ,
     x : number,
     y : number ,
     endx : number , // width
-    endy : number
+    endy : number,
+    strokeWidth : number
+    strokeColor: string;
+    opacity: number;
 } | {
     id : string
     type: 'Pencil',
     points: Array<{x: number, y: number}>,
-    color?: string,
-    width?: number
+    strokeWidth : number
+    strokeColor: string;
+    opacity: number;
 
 } | {
     id : string
@@ -32,9 +44,12 @@ export type Shape = {
     y : number ,
     endx : number ,
     endy : number
+    strokeWidth : number
+    strokeColor: string;
+    opacity: number;
 }
 
-export type AllSahpes = "Rect" | "Pencil" | "Circle" | "Line" | "Arrow" | "Pointer" | "Hand"
+export type AllShapes = "Rect" | "Pencil" | "Circle" | "Line" | "Arrow" | "Pointer" | "Hand"
 
 export type State = {
     existingShapes: Shape[]; // Assuming getExistingShapes returns Shape[]
@@ -56,3 +71,8 @@ export type State = {
     lastPanx : number
     lastPany : number
 }
+
+export type strokeOptions = ["#FFFFFF", "#dc2626", "#2563eb", "#16a34a"];
+export type fillOptions = ["#FFFFFF", "#f05454", "#4d7ef0", "#3bbf6d"];
+export type strokeWidths = [1, 2, 3];
+

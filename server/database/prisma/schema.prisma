@@ -11,19 +11,23 @@ model User {
   id        String     @id @default(uuid())
   email     String  @unique
   username  String
-  password  String
+  provider  String
+  password  String?
   avatar    String?
   rooms     Room[] 
+  joinedRooms JoinedRooms[]
   chats     Element[]
 }
 
 model Room {
   id        Int         @id @default(autoincrement())
   name      String      @unique
-  cerateAt  DateTime    @default(now())
+  createdAt  DateTime    @default(now())
+  code      String      
   adminId   String
   admin     User        @relation(fields: [adminId] , references: [id])
   chats     Element[]
+  joinedRooms JoinedRooms[]
 }
 
 model Element {
@@ -34,4 +38,22 @@ model Element {
   userId  String
   room    Room      @relation(fields: [roomId] , references: [id])
   chat    User      @relation(fields: [userId] , references: [id])
+}
+
+model JoinedRooms {
+  id      Int @id @default(autoincrement())
+  user    User      @relation(fields: [userid] , references: [id])
+  userid  String 
+  room    Room      @relation(fields: [roomId] , references: [id])
+  roomId  Int    
+  joinedAt DateTime @default(now())  
+
+  @@unique([userid , roomId]) 
+}
+
+model VerificationEmail{
+  id        Int       @id @default(autoincrement())
+  email     String    @unique  
+  code      String
+  expireAt  DateTime
 }

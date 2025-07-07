@@ -3,7 +3,9 @@ import axios from "axios"
 
 
 export async function getExistingShapes (rootId :String){
-    const response = await axios.get(`${http_backend}/v1/web/element/${rootId}`)
+    const response = await axios.get(`${http_backend}/v1/web/element/${rootId}` , {
+        withCredentials : true
+    })
     const shapesArray = response.data.elements
     if (!shapesArray){
         return []

@@ -1,97 +1,163 @@
 import { WebSocket, WebSocketServer } from 'ws';
-import jwt, { JwtPayload } from "jsonwebtoken";
-import { prismaClient } from "@db/index"
-import { parse } from 'path';
-import { subscribe, unsubscribe } from 'diagnostics_channel';
-const jwt_Secret = "123"
+import jwt from "jsonwebtoken";
+import { prismaClient } from "@db/index";
+import {parse} from "cookie"
+const jwt_Secret = "123";
 
-const wss = new WebSocketServer({ port: 8080 } , ()=>{console.log("running on port 8080")});
-
+// Start WebSocket server
+const wss = new WebSocketServer({ port: 8080 }, () => {
+  console.log("WS Server running on port 8080");
+});
+ 
 interface User {
-  ws: WebSocket,
-  rooms: string[],
-  userId: string
+  ws: WebSocket;
+  rooms: Set<string>;
+  userId: string;
 }
 
-const users: User[] = [];
+const users = new Map<WebSocket, User>();
 
 function checkUser(token: string): string | null {
   try {
-    const decoded = jwt.verify(token, jwt_Secret);
-    if (typeof decoded == "string") {
-      return null;
-    }
-    if (!decoded || !decoded.userId) {
-      return null;
-    }
-    return decoded.userId;
-  } catch(e) {
+    const decoded = jwt.verify(token, jwt_Secret) as { id: string };
+    return decoded?.id || null;
+  } catch (e) {
     return null;
   }
 }
 
+// Connection handler
+wss.on('connection', async (ws, request) => {
 
-const messageHandlear : Record<string , (data : any , user : User)=>Promise<void>> = {
-  subscribe : async(data , user)=>{
-    if(!user.rooms.includes(data.roomId)){
-      user.rooms.push(data.roomId)
+  const cookieHeader = request.headers.cookie
+
+  if(!cookieHeader){
+    ws.close();
+    return;
+  }
+
+  const cookies = parse(cookieHeader)
+  console.log("cookies : " , cookies)
+  const token = cookies.token;
+  const userId = token ? checkUser(token) : null;
+
+  if (!userId) return ws.close();
+
+  const user: User = { ws, rooms: new Set(), userId };
+  users.set(ws, user);
+
+  console.log(`User connected: ${userId}`);
+
+  ws.on('message', async (message) => {
+    let data: any;
+    try {
+      data = typeof message === 'string' ? JSON.parse(message) : JSON.parse(message.toString());
+    } catch (e) {
+      console.warn("Invalid JSON:", message);
+      return;
+    }
+
+    const handler = messageHandlers[data.type];
+    if (handler) {
+      try {
+        await handler(data, user);
+      } catch (err) {
+        console.error(`Error handling ${data.type}:`, err);
+      }
+    }
+  });
+
+  ws.on('close', () => {
+    users.delete(ws);
+    console.log(`User disconnected: ${userId}`);
+  });
+});
+
+// Message Handlers
+const messageHandlers: Record<string, (data: any, user: User) => Promise<void>> = {
+  subscribe: async (data, user) => {
+    const roomId = Number(data.roomId);
+    if (isNaN(roomId)) return;
+
+    const isAdmin = await prismaClient.room.findFirst({
+      where: { id: roomId, adminId: user.userId }
+    });
+
+    const isJoined = await prismaClient.joinedRooms.findFirst({
+      where: {
+         roomId,
+         userid : user.userId  
+        }
+    });
+
+    if (isAdmin || isJoined) {
+      user.rooms.add(data.roomId);
+      console.log(`User ${user.userId} subscribed to room ${data.roomId}`);
+    } else {
+      console.warn(`Unauthorized subscribe attempt by ${user.userId} to room ${data.roomId}`);
+      user.ws.send(JSON.stringify({
+        type : "unauthorized",
+        reason : "You are not part of this room"
+      }))
     }
   },
 
-  unsubscribe : async(data ,user)=>{
-    user.rooms = user.rooms.filter(x => x != data.roomId)
+  unsubscribe: async (data, user) => {
+    user.rooms.delete(data.roomId);
+    console.log(`User ${user.userId} unsubscribed from room ${data.roomId}`);
   },
 
-  addShape : async(data , user)=>{
-    const {roomId , shape , shapeId} = data
+  addShape: async (data, user) => {
+    const { roomId, shape, shapeId } = data;
+    if (!roomId || !shape || !shapeId) return;
 
     await prismaClient.element.create({
-      data:{
-        roomId : Number(roomId),
-        userId : user.userId,
+      data: {
+        roomId: Number(roomId),
+        userId: user.userId,
         shape,
         shapeId
       }
-    })
+    });
 
-    BroadcastToRoom(roomId , user.userId , {
-      type : "addShape",
-      shape , 
+    broadcastToRoom(roomId, user.userId, {
+      type: "addShape",
+      shape,
       roomId,
       shapeId
-    })
+    });
   },
 
-  moveShape : async(data , user)=>{
-    const {roomId , shape , shapeId} = data
-    BroadcastToRoom(roomId , user.userId , {
-      type : "moveShape",
-      shape , 
+  moveShape: async (data, user) => {
+    const { roomId, shape, shapeId } = data;
+    broadcastToRoom(roomId, user.userId, {
+      type: "moveShape",
+      shape,
       roomId,
       shapeId
-    })
+    });
   },
 
-  shapeMoved : async(data , user)=>{
-    const {roomId , shape , shapeId} = data
+  shapeMoved: async (data, user) => {
+    const { roomId, shape, shapeId } = data;
 
     const element = await prismaClient.element.findUnique({
-      where : {
-        roomId : Number(roomId),
+      where: {
+        roomId: Number(roomId),
         shapeId
       }
-    })
+    });
 
-    if(!element){
-      return console.error("Shape not found");
+    if (!element) {
+      return console.warn("Shape not found for update");
     }
 
     await prismaClient.element.update({
-      where : {roomId : Number(roomId), shapeId},
-      data : {shape : shape}
-    })
+      where: { roomId: Number(roomId), shapeId },
+      data: { shape }
+    });
 
-    BroadcastToRoom(roomId, null, {
+    broadcastToRoom(roomId, null, {
       type: "moveShape",
       roomId,
       shape,
@@ -99,78 +165,37 @@ const messageHandlear : Record<string , (data : any , user : User)=>Promise<void
     });
   },
 
-  deleteShape : async(data , user)=>{
-    const {roomId , shape , shapeId} = data
+  deleteShape: async (data, user) => {
+    const { roomId, shapeId } = data;
+    try {
+      await prismaClient.element.delete({
+        where: { roomId: Number(roomId), shapeId }
+      });
 
-    await prismaClient.element.delete({
-      where : {roomId : Number(roomId) , shapeId}
-    })
-
-    BroadcastToRoom(roomId , user.userId , {
-      type : "deleteShape" , 
-      shapeId
-    })
-
+      broadcastToRoom(roomId, user.userId, {
+        type: "deleteShape",
+        shapeId
+      });
+    } catch (err) {
+      console.error("Failed to delete shape", err);
+    }
   }
+};
 
+// Broadcast utility
+function broadcastToRoom(roomId: string, senderId: string | null, data: any) {
+  for (const [, user] of users.entries()) {
+    if (user.rooms.has(roomId) && user.userId !== senderId) {
+      user.ws.send(JSON.stringify(data));
+    }
+  }
 }
 
-
-
-wss.on('connection', function connection(ws, request) {
-  const url = request.url;
-  if (!url) {
-    ws.close()
-    return;
+// Ping support
+setInterval(() => {
+  for (const [ws] of users.entries()) {
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.ping();
+    }
   }
-  const { searchParams } = new URL(url, `ws://${request.headers.host}`);
-    const token = searchParams.get('token');
-
-    if (!token) {
-      ws.close();
-      return;
-    }
-
-  const userId = checkUser(token);
-  if (userId == null) {
-    ws.close()
-    return null;
-  }
-
-  users.push({
-    userId,
-    rooms: [],
-    ws
-  })
- 
-  ws.on('message', async function message(data) {
-    let parsedData;
-    
-    if (typeof data !== "string") {
-      parsedData = JSON.parse(data.toString());
-    } else {
-      parsedData = JSON.parse(data);
-    }
-    const handler = messageHandlear[parsedData.type];
-    if (handler) {
-      try {
-        const user = users.find(x => x.ws === ws);
-        if(!user){return;}
-        await handler(parsedData, user);
-      } catch (err) {
-        console.error(`Error in handler for type ${parsedData.type}:`, err);
-      }
-    }
-
-  });
-
-});
-
-
-function BroadcastToRoom(roomId :string , senderId : string | null, data : any ){
-  users.forEach( (user)=>{
-    if(user.rooms.includes(roomId) && user.userId != senderId){
-      user.ws.send(JSON.stringify(data))
-    }
-  })
-}
+}, 30000);

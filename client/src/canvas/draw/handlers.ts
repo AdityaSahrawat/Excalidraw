@@ -1,18 +1,20 @@
 "use client"
 
+import { DrawProps } from ".";
 import { Shape, State } from "../types";
 import { getCanvasPoints, getElementOnPointer, getPosiToShape, getShapeBounds, refreshCanvas } from "./drawing";
 
 
-
-export const HandleMouseDown = (ctx :CanvasRenderingContext2D , canvas : HTMLCanvasElement  , e: MouseEvent , state : State)=>{
-    console.log('MouseDown fired (unique ID:', Math.random(), ')')
+export const HandleMouseDown = (ctx :CanvasRenderingContext2D , canvas : HTMLCanvasElement  , e: MouseEvent , state : State , drawProps :React.RefObject<DrawProps>)=>{
+    const strokeWidth = drawProps.current.strokeWidth
+    const fillColor = drawProps.current.fillColor
+    const opacity = drawProps.current.opacity
+    const strokeColor = drawProps.current.strokeColor
+    const selectedTool = drawProps.current.selectedTool
     state.clicked = true
     let {x : canvasX ,y : canvasY} = getCanvasPoints(e.clientX , e.clientY , canvas , state)
     state.startX = canvasX;
     state.startY = canvasY;
-    // @ts-ignore
-    const selectedTool = window.selectedTool;
     if(selectedTool === "Pencil"){
         state.isDrawing = true
         state.currentPencilPath = [];
@@ -31,6 +33,7 @@ export const HandleMouseDown = (ctx :CanvasRenderingContext2D , canvas : HTMLCan
         state.selectedShape = element ?? null
         console.log("selected shape :  " , state.selectedShape)
         refreshCanvas(ctx , canvas , state.existingShapes, state.selectedShape, state.canvasOffsetX , state.canvasOffsetY , state.canvasScale)
+        
         if(element){
 
             state.movedShapeIndex = element.id;
@@ -59,12 +62,17 @@ export const HandleMouseDown = (ctx :CanvasRenderingContext2D , canvas : HTMLCan
     }
 }
 
-export const HandleMouseUp = (e:MouseEvent , state : State , socket : WebSocket , roomId : string , canvas : HTMLCanvasElement )=>{
+export const HandleMouseUp = (e:MouseEvent , state : State , socket : WebSocket , roomId : string , canvas : HTMLCanvasElement , drawProps :React.RefObject<DrawProps> )=>{
+    const strokeWidth = drawProps.current.strokeWidth
+    const fillColor = drawProps.current.fillColor
+    const opacity = drawProps.current.opacity
+    const strokeColor = drawProps.current.strokeColor
+    const selectedTool = drawProps.current.selectedTool
+    
     e.stopPropagation();
     // e.stopImmediatePropagation();
     let {x : canvasX ,y : canvasY} = getCanvasPoints(e.clientX , e.clientY , canvas , state)
 
-    console.log('MouseUp fired (unique ID:', Math.random(), ')')
     state.resizeHandle = null
 
 
@@ -83,8 +91,6 @@ export const HandleMouseUp = (e:MouseEvent , state : State , socket : WebSocket 
     state.clicked = false;
     const width = canvasX - state.startX;
     const height = canvasY - state.startY;
-    // @ts-ignore
-    const selectedTool = window.selectedTool;
     
     let shape: Shape;
     const uuid = crypto.randomUUID() 
@@ -99,16 +105,25 @@ export const HandleMouseUp = (e:MouseEvent , state : State , socket : WebSocket 
             type: "Circle",
             x: centerX,
             y: centerY,
-            radius: radius
+            radius: radius,
+            strokeWidth: strokeWidth,
+            fillColor: fillColor,
+            strokeColor: strokeColor,
+            opacity: opacity
         };
     } else if (selectedTool === "Rect") {
+        console.log("strclr : " , strokeColor)
         shape = {
             id : uuid,
             type: "Rect",
             x: state.startX,
             y: state.startY,
             width: width,
-            height: height
+            height: height,
+            strokeWidth: strokeWidth,
+            fillColor: fillColor,
+            strokeColor: strokeColor,
+            opacity: opacity
         };
     }else if (selectedTool === "Line"){
         shape = {
@@ -117,13 +132,19 @@ export const HandleMouseUp = (e:MouseEvent , state : State , socket : WebSocket 
             x : state.startX,
             y : state.startY,
             endx : width,
-            endy : height
+            endy : height,
+            strokeWidth: strokeWidth,
+            strokeColor: strokeColor,
+            opacity: opacity
         }
     }else if (selectedTool === "Pencil"){
         shape ={
             id : uuid,
             type : "Pencil",
-            points : [...state.currentPencilPath]
+            points : [...state.currentPencilPath],
+            strokeWidth: strokeWidth,
+            strokeColor: strokeColor,
+            opacity: opacity
         }
         state.currentPencilPath = []
         state.isDrawing = false
@@ -135,6 +156,9 @@ export const HandleMouseUp = (e:MouseEvent , state : State , socket : WebSocket 
             y: state.startY,
             endx: canvasX - state.startX,
             endy: canvasY - state.startY,
+            strokeWidth: strokeWidth,
+            strokeColor: strokeColor,
+            opacity: opacity
         }
     }else{
         return;
@@ -148,18 +172,21 @@ export const HandleMouseUp = (e:MouseEvent , state : State , socket : WebSocket 
             shape: JSON.stringify(shape),
             shapeId : shape.id
         }));
-        console.log("sent shape to ws" , shape)
     }
 }
 
-export const HandleMouseMove = (e:MouseEvent , state : State , socket : WebSocket , roomId : string , ctx: CanvasRenderingContext2D , canvas:HTMLCanvasElement)=>{
-    // @ts-ignore
-    const selectedTool = window.selectedTool;
+export const HandleMouseMove = (e:MouseEvent , state : State , socket : WebSocket , roomId : string , ctx: CanvasRenderingContext2D , canvas:HTMLCanvasElement , drawProps :React.RefObject<DrawProps>)=>{
+    const strokeWidth = drawProps.current.strokeWidth
+    const fillColor = drawProps.current.fillColor
+    const opacity = drawProps.current.opacity
+    const strokeColor = drawProps.current.strokeColor
+    const selectedTool = drawProps.current.selectedTool
+    
     let {x : canvasX ,y : canvasY} = getCanvasPoints(e.clientX , e.clientY , canvas , state);
     
     if(state.clicked && selectedTool === "Hand"){
-        let dx = canvasX - state.lastPanx;
-        let dy = canvasY - state.lastPany;
+        let dx = (canvasX - state.lastPanx) * state.canvasScale;
+        let dy = (canvasY - state.lastPany) * state.canvasScale;
 
         state.canvasOffsetX += dx;
         state.canvasOffsetY += dy;
@@ -169,7 +196,6 @@ export const HandleMouseMove = (e:MouseEvent , state : State , socket : WebSocke
         refreshCanvas(ctx , canvas  , state.existingShapes , state.selectedShape, state.canvasOffsetX , state.canvasOffsetY , state.canvasScale)
     }
     if (selectedTool === "Hand") {
-        console.log("handdddddd", state.clicked)
         document.body.style.cursor = state.clicked ? "grabbing" : "grab";
     }
 
@@ -178,7 +204,6 @@ export const HandleMouseMove = (e:MouseEvent , state : State , socket : WebSocke
         const mouseStyleForShape = getPosiToShape(canvasX  , canvasY , state.selectedShape)
         if(state.selectedShape && mouseStyleForShape){
             
-            console.log("cursor style : " , mouseStyleForShape)
             if(mouseStyleForShape === "top-left" || mouseStyleForShape === "bottom-right"){
                 document.body.style.cursor = "nwse-resize"
             }else if (mouseStyleForShape === "bottom-left" || mouseStyleForShape === "top-right"){
@@ -192,8 +217,7 @@ export const HandleMouseMove = (e:MouseEvent , state : State , socket : WebSocke
                 document.body.style.cursor = "ew-resize"
             }
         }
-        //@ts-ignore
-        else if( window.selectedTool === "Pointer" &&  getElementOnPointer(canvasX , canvasY , state.existingShapes)){
+        else if( selectedTool === "Pointer" &&  getElementOnPointer(canvasX , canvasY , state.existingShapes)){
             document.body.style.cursor = "move"  
         }
         else{
@@ -207,17 +231,28 @@ export const HandleMouseMove = (e:MouseEvent , state : State , socket : WebSocke
     const height = canvasY - state.startY;
     refreshCanvas(ctx , canvas , state.existingShapes , state.selectedShape, state.canvasOffsetX , state.canvasOffsetY , state.canvasScale);
     
-    ctx.strokeStyle = "rgba(255 , 255 , 255)"
-    
+    ctx.save();
+    ctx.setTransform(state.canvasScale, 0, 0, state.canvasScale, state.canvasOffsetX, state.canvasOffsetY);
+    ctx.globalAlpha = opacity/100;
+    ctx.lineWidth = strokeWidth
+    ctx.strokeStyle = strokeColor
     if(selectedTool === "Rect"){
-        ctx.strokeRect(state.startX , state.startY , width ,height)
+        ctx.beginPath();
+        ctx.rect(state.startX, state.startY, width, height);
+        ctx.fillStyle = fillColor;
+        ctx.fill();
+        ctx.strokeStyle = strokeColor;
+        ctx.stroke();
+        ctx.closePath();
     }else if (selectedTool === "Circle"){
+        ctx.fillStyle = fillColor;
         let radius = Math.max(height , width)/2
         if(radius <0){  radius = -radius}      //////////////////////////////////imp
         ctx.beginPath();
         ctx.arc(state.startX + width/2 ,state.startY + height/2 , radius ,0 , Math.PI * 2)
-        ctx.stroke()
-        ctx.closePath()
+        ctx.fill();
+        ctx.stroke();
+        
     } else if(selectedTool === "Line"){
         ctx.beginPath();
         ctx.moveTo(state.startX , state.startY)
@@ -286,6 +321,7 @@ export const HandleMouseMove = (e:MouseEvent , state : State , socket : WebSocke
                     break;
                 
             }
+            
         
         // Update the start position for next move event
             state.startX = canvasX;
@@ -322,7 +358,6 @@ export const HandleMouseMove = (e:MouseEvent , state : State , socket : WebSocke
         const index = state.existingShapes.findIndex(s => s.id === updatedShape.id);
         state.existingShapes[index] = updatedShape
         if(!updatedShape){return;}
-        console.log("sended shape to moveshape")
         socket.send(JSON.stringify({
             type : "moveShape", 
             roomId,
@@ -334,11 +369,13 @@ export const HandleMouseMove = (e:MouseEvent , state : State , socket : WebSocke
         refreshCanvas(ctx, canvas, state.existingShapes , state.selectedShape, state.canvasOffsetX , state.canvasOffsetY , state.canvasScale);
         return;
     }
+    ctx.restore();
 }
 
-export const HandleWheel = (ctx :CanvasRenderingContext2D , canvas : HTMLCanvasElement  , e: WheelEvent , state : State)=>{
-    // @ts-ignore
-    if(window.selectedTool != "Hand"){return}
+export const HandleWheel = (ctx :CanvasRenderingContext2D , canvas : HTMLCanvasElement  , e: WheelEvent , state : State , drawProps :React.RefObject<DrawProps>)=>{
+    const selectedTool = drawProps.current.selectedTool
+    
+    if(selectedTool != "Hand"){return}
     e.preventDefault();
     const rect = canvas.getBoundingClientRect();
     let {x : canvasX ,y : canvasY} = getCanvasPoints(e.clientX , e.clientY , canvas , state)
@@ -362,10 +399,9 @@ export const HandleWheel = (ctx :CanvasRenderingContext2D , canvas : HTMLCanvasE
         state.canvasOffsetY = mouseY - ((mouseY - state.canvasOffsetY) / prevScale) * newScale;
         state.canvasScale = newScale;
     } else {
-        // 🖱️ Pan vertically (like scrolling the canvas)
-        const panSpeed = 1; // You can adjust this
-        state.canvasOffsetY -= e.deltaY * panSpeed;
-        state.canvasOffsetX -= e.deltaX * panSpeed;
+        const panSpeed = 1; 
+        state.canvasOffsetY -= (e.deltaY * panSpeed) / state.canvasScale;
+        state.canvasOffsetX -= (e.deltaX * panSpeed) / state.canvasScale;
     }
 
     refreshCanvas(
@@ -495,6 +531,7 @@ function handleCircleResize(shape: Shape, handle: string, deltaX: number, deltaY
     // Ensure minimum radius
     shape.radius = Math.max(1, shape.radius);
 }
+
 function handleLineResize(shape: Shape, handle: string, deltaX: number, deltaY: number) {
     if(shape.type != "Line"){return}
     switch(handle) {

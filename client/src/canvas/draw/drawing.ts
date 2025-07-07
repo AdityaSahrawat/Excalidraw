@@ -21,57 +21,59 @@ export function refreshCanvas( ctx:CanvasRenderingContext2D ,canvas: HTMLCanvasE
 }
 
 export function drawShape(ctx : CanvasRenderingContext2D , shape : Shape){
-
+    ctx.globalAlpha = shape.opacity/100;
+    ctx.lineWidth = shape.strokeWidth
+    ctx.strokeStyle = shape.strokeColor
     switch(shape.type){
         case "Rect":
-            ctx.strokeStyle = 'rgba(255,255,255)';
-            ctx.strokeRect(shape.x , shape.y , shape.width , shape.height)
-            break;
+            ctx.fillStyle = shape.fillColor
+            ctx.beginPath();
+            ctx.rect(shape.x, shape.y, shape.width, shape.height);
+            ctx.fill();
+            ctx.stroke();
+            ctx.closePath();
+          break;
         case "Circle" :
-            ctx.beginPath()
-            // ctx.strokeStyle = 'rgba(255,255,255)';
-            ctx.arc(shape.x , shape.y , shape.radius , 0 , Math.PI*2)
-            ctx.stroke()
-            ctx.closePath()
+            ctx.fillStyle = shape.fillColor;
+            ctx.beginPath();
+            ctx.arc(shape.x, shape.y, shape.radius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            ctx.closePath();
             break;
         case "Line":
-            ctx.beginPath()
-            // ctx.strokeStyle = 'rgba(255,255,255)';
-            ctx.moveTo(shape.x  , shape.y)
-            ctx.lineTo(shape.x + shape.endx , shape.y + shape.endy)
-            ctx.stroke()
-            ctx.closePath()
+            ctx.beginPath();
+            ctx.moveTo(shape.x, shape.y);
+            ctx.lineTo(shape.x + shape.endx, shape.y + shape.endy);
+            ctx.stroke();
+            ctx.closePath();
             break;
         case "Pencil":
-            if(shape.points.length < 2) return; 
-                ctx.lineCap = 'round';
-                ctx.lineJoin = 'round';
-                ctx.beginPath();
-                ctx.moveTo(shape.points[0].x, shape.points[0].y);
-                
-                for(let i = 1; i < shape.points.length; i++) {
-                    ctx.lineTo(shape.points[i].x, shape.points[i].y);
-                }
-                
-                ctx.stroke();
-                ctx.closePath();
+            if (shape.points.length < 2) return;
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
+            ctx.beginPath();
+            ctx.moveTo(shape.points[0].x, shape.points[0].y);
+            for (let i = 1; i < shape.points.length; i++) {
+                ctx.lineTo(shape.points[i].x, shape.points[i].y);
+            }
+            ctx.stroke();
+            ctx.closePath();
             break;
         case "Arrow" : 
             const endX = shape.x + shape.endx;
             const endY = shape.y + shape.endy;
-            
-            // Draw the main line
+            const angle = Math.atan2(endY - shape.y, endX - shape.x);
+            const headLength = 15;
+
+            // Line
             ctx.beginPath();
             ctx.moveTo(shape.x, shape.y);
             ctx.lineTo(endX, endY);
             ctx.stroke();
+            ctx.closePath();
 
-            // Calculate angle
-            const angle = Math.atan2(endY - shape.y, endX - shape.x);
-            const headLength = 15;
-            
-            ctx.fillStyle = "rgba(255, 255, 255)";
-            // Draw arrowhead
+            // Arrowhead
             ctx.beginPath();
             ctx.moveTo(endX, endY);
             ctx.lineTo(
@@ -83,8 +85,9 @@ export function drawShape(ctx : CanvasRenderingContext2D , shape : Shape){
                 endY - headLength * Math.sin(angle + Math.PI / 6)
             );
             ctx.closePath();
+            ctx.fillStyle = shape.strokeColor;
             ctx.fill();
-        break;
+            break;
 
     }
 }
@@ -407,7 +410,11 @@ export function getPosiToShape(x: number, y: number, shape: Shape | null): strin
       x: handle.x,
       y: handle.y,
       width: handleSize,
-      height: handleSize
+      height: handleSize,
+      strokeWidth: 2,
+      fillColor: "random",
+      strokeColor: "random",
+      opacity: 100
     };
 
     if (isWithinElement(x, y, rect)) {
@@ -421,7 +428,12 @@ export function getPosiToShape(x: number, y: number, shape: Shape | null): strin
     type: "Circle",
     x: bounds.x + bounds.width/2,
     y: bounds.y - 14,
-    radius: 6
+    radius: 6,
+    strokeWidth: 2,
+    fillColor: "random",
+    strokeColor: "random",
+    opacity: 100
+
   };
   
   if (isWithinElement(x, y, rotationHandle)) {

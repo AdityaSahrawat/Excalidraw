@@ -19,12 +19,13 @@ const users = new Map<WebSocket, User>();
 
 function checkUser(token: string): string | null {
   try {
-    const decoded = jwt.verify(token, jwt_Secret) as { id: string };
-    return decoded?.id || null;
+    const decoded = jwt.verify(token, jwt_Secret) as { userId: string };
+    return decoded?.userId || null;
   } catch (e) {
     return null;
   }
 }
+
 
 // Connection handler
 wss.on('connection', async (ws, request) => {
@@ -32,16 +33,16 @@ wss.on('connection', async (ws, request) => {
   const cookieHeader = request.headers.cookie
 
   if(!cookieHeader){
-    ws.close();
+    ws.close(1000 , "no cookieHeader found");
     return;
   }
 
   const cookies = parse(cookieHeader)
-  console.log("cookies : " , cookies)
   const token = cookies.token;
   const userId = token ? checkUser(token) : null;
 
-  if (!userId) return ws.close();
+
+  if (!userId) return ws.close(1000 , "userId not found");
 
   const user: User = { ws, rooms: new Set(), userId };
   users.set(ws, user);
@@ -58,6 +59,8 @@ wss.on('connection', async (ws, request) => {
     }
 
     const handler = messageHandlers[data.type];
+
+
     if (handler) {
       try {
         await handler(data, user);
@@ -138,7 +141,7 @@ const messageHandlers: Record<string, (data: any, user: User) => Promise<void>> 
     });
   },
 
-  shapeMoved: async (data, user) => {
+  updateShape: async (data, user) => {
     const { roomId, shape, shapeId } = data;
 
     const element = await prismaClient.element.findUnique({
@@ -154,9 +157,11 @@ const messageHandlers: Record<string, (data: any, user: User) => Promise<void>> 
 
     await prismaClient.element.update({
       where: { roomId: Number(roomId), shapeId },
-      data: { shape }
+      data: { 
+        shape : JSON.stringify(shape)
+       }
     });
-
+    console.log("shape updated ")
     broadcastToRoom(roomId, null, {
       type: "moveShape",
       roomId,
@@ -171,7 +176,7 @@ const messageHandlers: Record<string, (data: any, user: User) => Promise<void>> 
       await prismaClient.element.delete({
         where: { roomId: Number(roomId), shapeId }
       });
-
+      console.log("shape deleted")
       broadcastToRoom(roomId, user.userId, {
         type: "deleteShape",
         shapeId
@@ -181,7 +186,6 @@ const messageHandlers: Record<string, (data: any, user: User) => Promise<void>> 
     }
   }
 };
-
 // Broadcast utility
 function broadcastToRoom(roomId: string, senderId: string | null, data: any) {
   for (const [, user] of users.entries()) {
@@ -192,10 +196,10 @@ function broadcastToRoom(roomId: string, senderId: string | null, data: any) {
 }
 
 // Ping support
-setInterval(() => {
-  for (const [ws] of users.entries()) {
-    if (ws.readyState === WebSocket.OPEN) {
-      ws.ping();
-    }
-  }
-}, 30000);
+// setInterval(() => {
+//   for (const [ws] of users.entries()) {
+//     if (ws.readyState === WebSocket.OPEN) {
+//       ws.ping();
+//     }
+//   }
+// }, 30000);

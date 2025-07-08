@@ -2,7 +2,8 @@
 import { getExistingShapes } from "./http";
 import { refreshCanvas } from "./drawing";
 import {HandleMouseDown,HandleMouseMove,HandleMouseUp,HandleWheel,} from "./handlers";
-import { AllShapes, State } from "../types";
+import { AllShapes, Shape, State } from "../types";
+import { cva } from "class-variance-authority";
 
 export type DrawProps = {
   strokeWidth: number;
@@ -14,8 +15,11 @@ export type DrawProps = {
 
 export default async function initDraw(canvas: HTMLCanvasElement,roomId: string,socket: WebSocket , drawProps :React.RefObject<DrawProps> ) {
   const ctx = canvas.getContext("2d");
-  if (!ctx){return { 
-        updateStyle() {}, cleanup() {} 
+  if (!ctx){
+    return { 
+        updateStyle :()=> {},
+        cleanup: ()=> {} ,
+        deleteShape : ()=> {}
     };
   } 
 
@@ -77,21 +81,51 @@ const state: State = {
   canvas.addEventListener("wheel",     onWheel);
 
   function updateStyle(drawProps : DrawProps) {
-  if (!state.clicked && state.selectedShape && drawProps.selectedTool === "Pointer") {
-    state.selectedShape.opacity = drawProps.opacity;
-    state.selectedShape.strokeColor = drawProps.strokeColor;
-    state.selectedShape.strokeWidth = drawProps.strokeWidth;
+    if (!state.clicked && state.selectedShape && drawProps.selectedTool === "Pointer") {
+      const shape = state.selectedShape
+      shape.opacity = drawProps.opacity;
+      shape.strokeColor = drawProps.strokeColor;
+      shape.strokeWidth = drawProps.strokeWidth;
 
-    if (
-      state.selectedShape.type === "Rect" ||
-      state.selectedShape.type === "Circle"
-    ) {
-      state.selectedShape.fillColor = drawProps.fillColor;
+      if (
+        shape.type === "Rect" ||
+        shape.type === "Circle"
+      ) {
+        shape.fillColor = drawProps.fillColor;
+      }
+      if(socket.readyState === WebSocket.OPEN){
+        socket.send(JSON.stringify({
+          type : "updateShape",
+          roomId ,
+          shape : JSON.stringify(shape),
+          shapeId : shape.id
+        }))
+      }
+
+      refreshCanvas(ctx!,canvas,state.existingShapes,state.selectedShape,state.canvasOffsetX,state.canvasOffsetY,state.canvasScale);
     }
-
-    refreshCanvas(ctx!,canvas,state.existingShapes,state.selectedShape,state.canvasOffsetX,state.canvasOffsetY,state.canvasScale);
   }
-}
+
+  function deleteShape(){
+    if(!state.selectedShape){
+      return;
+    }
+    console.log("req came !!!!!")
+    const shape = state.selectedShape
+    state.existingShapes = state.existingShapes.filter((s)=>s.id != shape.id)
+
+    if(socket.readyState === WebSocket.OPEN){
+      socket.send(JSON.stringify({
+        type : "deleteShape",
+        roomId ,
+        shape : JSON.stringify(shape),
+        shapeId : shape.id
+      }))
+    }
+    state.selectedShape = null;
+    refreshCanvas(ctx! , canvas , state.existingShapes , state.selectedShape , state.canvasOffsetX , state.canvasOffsetY , state.canvasScale)
+
+  }
 
 
   function cleanup() {
@@ -101,5 +135,9 @@ const state: State = {
     canvas.removeEventListener("wheel",     onWheel);
   }
 
-  return { updateStyle, cleanup };
+  return {
+    updateStyle,
+    cleanup,
+    deleteShape,
+  };
 }

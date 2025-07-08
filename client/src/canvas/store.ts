@@ -30,7 +30,7 @@ export const useSideBarStore = create<SideBarState>( (set)=>({
     fillColor : "#f05454",
     setFillColor : (color)=> set({fillColor : color}),
     
-    opacity: 1,
+    opacity: 100,
     setOpacity : (value)=> set({opacity : value}),
     
     strokeColor : "#FFFFFF",

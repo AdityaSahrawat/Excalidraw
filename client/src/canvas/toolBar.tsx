@@ -1,4 +1,4 @@
-import {Hand,MousePointer,PenLine,RectangleHorizontalIcon,Circle,ArrowRight,Pencil,} from "lucide-react";
+import {Hand,MousePointer,PenLine,RectangleHorizontalIcon,Circle,ArrowRight,Pencil, Trash,} from "lucide-react";
 import { useSeletedTool, useSideBarStore } from "./store";
 import { ReactNode } from "react"
 
@@ -6,7 +6,7 @@ const strokeOptions = ["#FFFFFF", "#dc2626", "#2563eb", "#16a34a"];
 const fillOptions = ["#FFFFFF", "#f05454", "#4d7ef0", "#3bbf6d"];
 const strokeWidths = [1, 2, 3];
 
-export default function ToolSidebar() {
+export default function ToolSidebar( {onDelete} : {onDelete : ()=>void}) {
 
   const strokeWidth = useSideBarStore((state)=> state.strokeWidth)
   const setStrokeWidth = useSideBarStore((state)=> state.setStrokeWidth)
@@ -134,7 +134,12 @@ export default function ToolSidebar() {
             className="w-full accent-blue-500"
           />
           <p>{opacity}</p>
+
+          {/* delete */}
         </div>
+          <div onClick={onDelete} className="mb-2 w-10 py-2 px-2 block text-sm rounded-xl hover:cursor-pointer hover:bg-gray-700 hover:text-black">
+              <Trash/>
+          </div>
       </div>
     </div>
   );

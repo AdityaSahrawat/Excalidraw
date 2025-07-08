@@ -79,13 +79,11 @@ export const HandleMouseUp = (e:MouseEvent , state : State , socket : WebSocket 
     if(state.clicked && state.selectedShape){
         if (socket.readyState === WebSocket.OPEN) {
             socket.send(JSON.stringify({
-                type: "shapeMoved",
+                type: "updateShape",
                 roomId,  
                 shapeId : state.selectedShape.id,
                 shape : state.selectedShape
             }));
-
-            // state.selectedShape = null
         }
     }
     state.clicked = false;

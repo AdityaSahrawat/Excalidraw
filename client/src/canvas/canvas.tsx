@@ -4,6 +4,7 @@ import { useEffect, useReducer, useRef } from "react";
 import initDraw, { DrawProps } from "./draw/index";
 import ToolSidebar from "./toolBar";
 import { useSeletedTool, useSideBarStore } from "./store";
+import { Shape } from "./types";
 
 type CanvasProps = {
   roomId: string;
@@ -27,14 +28,22 @@ const Canvas = ({ roomId, socket }: CanvasProps) => {
     selectedTool,
   });
 
+  const drawAPIRef = useRef<{
+    updateStyle: (props: DrawProps) => void;
+    cleanup: () => void;
+    deleteShape : () =>void;
+  } | null>(null);
+
+
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    initDraw(canvas, roomId, socket ,drawPropsRef)
+    initDraw(canvas, roomId, socket ,drawPropsRef).then((api)=>{drawAPIRef.current = api;})
 
   }, [roomId, socket]);
+
   useEffect(()=>{
       drawPropsRef.current= {
         strokeWidth,
@@ -43,6 +52,16 @@ const Canvas = ({ roomId, socket }: CanvasProps) => {
         strokeColor,
         selectedTool,
       };
+
+      if (drawAPIRef.current) {
+        drawAPIRef.current.updateStyle({
+          strokeWidth,
+          fillColor,
+          opacity,
+          strokeColor,
+          selectedTool,
+        });
+      }
   },[strokeWidth, fillColor, opacity, strokeColor, selectedTool])
 
   return (
@@ -52,7 +71,7 @@ const Canvas = ({ roomId, socket }: CanvasProps) => {
         width={typeof window !== "undefined" ? window.innerWidth : 1920}
         height={typeof window !== "undefined" ? window.innerHeight : 1080}
       />
-      <ToolSidebar />
+      <ToolSidebar onDelete={() => drawAPIRef.current?.deleteShape()} />
     </div>
   );
 };

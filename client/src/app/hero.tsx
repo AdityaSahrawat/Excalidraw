@@ -3,6 +3,7 @@
 import { Users, Download, Brush } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 const Hero = () => {
     const router = useRouter()
@@ -76,13 +77,15 @@ const Hero = () => {
               <div className="w-3 h-3 bg-green-400 rounded-full"></div>
             </div>
           </div>
-          
-          {/* Mockup Content */}
-          <img 
-            src="/home1.png" 
+
+          <Image 
+            src="/home1.png"
             alt="Whiteboard mockup showing collaborative drawing features"
+            width={800} 
+            height={600} 
             className="w-full h-auto rounded"
           />
+
         </div>
       </div>
     </div>

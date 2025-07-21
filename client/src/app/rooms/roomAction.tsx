@@ -10,22 +10,20 @@ interface Props {
   onRoomDeleted: () => void;
 }
 
-const joinBaseUrl = "http://localhost:3000/join-room/";
-
 export default function RoomActions({ roomId, currentCode, onCodeChanged, onRoomDeleted }: Props) {
   const [changingCode, setChangingCode] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const BackendURL  = process.env.NEXT_PUBLIC_BackendURL
 
-  const joinUrl = `${joinBaseUrl}${roomId}?roomId=${roomId}&code=${currentCode}`;
+  const joinUrl = `${BackendURL}/web/join-room/${roomId}?roomId=${roomId}&code=${currentCode}`;
 
   async function handleChangeCode() {
     setChangingCode(true);
     setMessage(null);
     setError(null);
     try {
-      const token = localStorage.getItem("token");
       const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
       let newCode = "";
       for (let i = 0; i < 6; i++) {
@@ -33,7 +31,7 @@ export default function RoomActions({ roomId, currentCode, onCodeChanged, onRoom
       }
 
       await axios.patch(
-        `http://localhost:3009/v1/web/code/${roomId}`,{
+        `${BackendURL}/web/code/${roomId}`,{
            newCode 
           },{
              withCredentials : true
@@ -42,7 +40,8 @@ export default function RoomActions({ roomId, currentCode, onCodeChanged, onRoom
 
       setMessage(`Room code updated: ${newCode}`);
       onCodeChanged(newCode);
-    } catch (err: any) {
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
       setError(err?.response?.data?.message || "Error changing code.");
     }
     setChangingCode(false);
@@ -54,13 +53,13 @@ export default function RoomActions({ roomId, currentCode, onCodeChanged, onRoom
     setMessage(null);
     setError(null);
     try {
-      const token = localStorage.getItem("token");
-      await axios.delete(`http://localhost:3009/v1/web/room/${roomId}`, {
+      await axios.delete(`${BackendURL}/web/room/${roomId}`, {
         withCredentials : true
       });
       setMessage("Room deleted.");
       onRoomDeleted();
-    } catch (err: any) {
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
       setError(err?.response?.data?.message || "Error deleting room.");
     }
     setDeleting(false);

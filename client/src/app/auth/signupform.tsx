@@ -20,13 +20,14 @@ const SignUpForm = ({ onSuccess }: SignUpFormProps) => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const backendUrl = process.env.NEXT_PUBLIC_BackendURL
 
   const handleSendCode = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      const res = await axios.post("http://localhost:3009/v1/user/send-code", {
+      const res = await axios.post(`${backendUrl}/user/send-code`, {
         email,
         username,
       });
@@ -36,9 +37,10 @@ const SignUpForm = ({ onSuccess }: SignUpFormProps) => {
       toast.success("Code Sent! Please check your email for the verification code.");
       
       setStep("verification");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Send code error:", error);
-      toast.error(error.response?.data?.message || "Failed to send verification code. Please try again.");
+      const err = error as { response?: { data?: { message?: string } } };
+      toast.error(err.response?.data?.message || "Failed to send verification code. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -55,7 +57,7 @@ const SignUpForm = ({ onSuccess }: SignUpFormProps) => {
     setIsLoading(true);
 
     try {
-      const res = await axios.post("http://localhost:3009/v1/user/verify-code", {
+      await axios.post(`${backendUrl}/user/verify-code`, {
         email,
         username,
         code,
@@ -69,9 +71,10 @@ const SignUpForm = ({ onSuccess }: SignUpFormProps) => {
       toast.success("Success! Your account has been created successfully.");
       
       onSuccess();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Verify code error:", error);
-      toast.error(error.response?.data?.message || "Failed to verify code. Please try again.");
+      const err = error as { response?: { data?: { message?: string } } };
+      toast.error(err.response?.data?.message || "Failed to verify code. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -115,7 +118,7 @@ const SignUpForm = ({ onSuccess }: SignUpFormProps) => {
     return (
       <form onSubmit={handleVerifyCode} className="space-y-4">
         <div className="text-sm text-gray-600 mb-4">
-          We've sent a verification code to <strong>{email}</strong>
+          We&apos;ve sent a verification code to <strong>{email}</strong>
         </div>
         
         <div className="space-y-2">

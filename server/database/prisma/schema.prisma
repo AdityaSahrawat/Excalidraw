@@ -6,54 +6,56 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
-
 model User {
-  id        String     @id @default(uuid())
-  email     String  @unique
-  username  String
-  provider  String
-  password  String?
-  avatar    String?
-  rooms     Room[] 
-  joinedRooms JoinedRooms[]
-  chats     Element[]
+  id           String         @id @default(uuid())
+  email        String         @unique
+  username     String
+  provider     String
+  password     String?
+  avatar       String?
+  rooms        Room[]         @relation("AdminRooms")     
+  joinedRooms  JoinedRooms[]
+  Elements      Element[]
 }
 
 model Room {
-  id        Int         @id @default(autoincrement())
-  name      String      @unique
-  createdAt  DateTime    @default(now())
-  code      String      
-  adminId   String
-  admin     User        @relation(fields: [adminId] , references: [id])
-  chats     Element[]
-  joinedRooms JoinedRooms[]
-}
+  id           String         @id @default(cuid())    
+  name         String         @unique
+  createdAt    DateTime       @default(now())
+  code         String
+  adminId      String
+  admin        User           @relation("AdminRooms", fields: [adminId], references: [id])
+  joinedRooms  JoinedRooms[]
+  Elements      Element[]
 
-model Element {
-  id      Int       @id @default(autoincrement()) 
-  shapeId String    @unique
-  shape String
-  roomId  Int       
-  userId  String
-  room    Room      @relation(fields: [roomId] , references: [id])
-  chat    User      @relation(fields: [userId] , references: [id])
 }
 
 model JoinedRooms {
-  id      Int @id @default(autoincrement())
-  user    User      @relation(fields: [userid] , references: [id])
-  userid  String 
-  room    Room      @relation(fields: [roomId] , references: [id])
-  roomId  Int    
-  joinedAt DateTime @default(now())  
+  id         String             @id @default(uuid())
+  userId     String
+  roomId     String         
+  joinedAt   DateTime        @default(now())
+  user       User            @relation(fields: [userId], references: [id])
+  room       Room            @relation(fields: [roomId], references: [id])
 
-  @@unique([userid , roomId]) 
+  @@unique([userId, roomId])
 }
 
-model VerificationEmail{
-  id        Int       @id @default(autoincrement())
-  email     String    @unique  
-  code      String
-  expireAt  DateTime
+model Element {
+  id        Int           @id @default(autoincrement())
+  shapeId   String        @unique
+  shape     String
+  userId    String
+  roomId    String
+  room      Room        @relation(fields: [roomId] , references: [id])
+  user      User        @relation(fields: [userId] , references: [id])
+  
+
+}
+
+model VerificationEmail {
+  id         Int             @id @default(autoincrement())
+  email      String          @unique
+  code       String
+  expireAt   DateTime
 }

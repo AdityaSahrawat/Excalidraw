@@ -1,13 +1,13 @@
 import nodemailer from 'nodemailer';
-
+import dotenv from "dotenv"
 import { Router, Request, Response } from "express";
 import jwt from "jsonwebtoken"
-const userRouter = Router();
+const userRouter: Router = Router();
 import {prismaClient} from "@db/index"
 import { userSchema , signinSchema , roomSchema } from "@zod/index"
-const jwt_secret  = "123"
-const saltRound = process.env.SALTROUNDS || 5
-
+// const saltRound = process.env.saltRound
+dotenv.config()
+const jwt_secret = process.env.jwt_secret!
 
 userRouter.post("/signup", async(req: Request, res: Response) => {
     const {username , email , password } = req.body 
@@ -37,11 +37,11 @@ userRouter.post("/signup", async(req: Request, res: Response) => {
                 email,
                 password,
                 username,
-                provider : "manual"
+                provider : "manual",
             }
         });
         const token = jwt.sign({ email: user.email, id: user.id },
-                jwt_secret 
+                jwt_secret
             );
             
         res.cookie("token", token, {
@@ -78,9 +78,7 @@ userRouter.post('/signin', async(req: Request, res : Response) => {
             })
             return
         }
-        const token = jwt.sign({
-            userId : user?.id
-        } , jwt_secret)
+        const token = jwt.sign({email : user.email , userId :user.id },jwt_secret)
 
 
         res.cookie("token" , token , {
@@ -107,6 +105,13 @@ userRouter.post("/oauth", async(req: Request, res: Response) => {
   try {
     const existingUser = await prismaClient.user.findUnique({ where: { email } });
 
+    if(existingUser?.provider === "manual"){
+        res.status(403).json({
+            message : "A user allreday exists with this email ( manual way ) "
+        })
+        return
+    }
+
     let user;
 
     if (existingUser) {
@@ -122,7 +127,7 @@ userRouter.post("/oauth", async(req: Request, res: Response) => {
       });
     }
 
-    const token = jwt.sign({ email: user.email, id: user.id }, jwt_secret);
+    const token = jwt.sign({ email: user.email, userId: user.id }, jwt_secret);
 
     res.cookie("token" , token , {
         httpOnly : true,
@@ -281,7 +286,7 @@ userRouter.post("/verify-code" , async (req : Request , res : Response)=>{
             }
         })
 
-        const token = jwt.sign({email : user.email , id :user.id },jwt_secret)
+        const token = jwt.sign({email : user.email , userId :user.id },jwt_secret)
 
         res.cookie("token" , token , {
             httpOnly : true,

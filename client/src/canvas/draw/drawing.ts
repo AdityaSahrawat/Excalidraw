@@ -1,4 +1,4 @@
-import { AllSahpes, Shape, State } from "../types";
+import {Shape, State } from "../types";
 
 
 
@@ -113,7 +113,6 @@ function isWithinElement(x: number , y: number , shape : Shape) : boolean{
         return x>=leftx && x<=rightx && y<=bottomy && y>=topy;
     }
     if(shape.type === "Circle"){
-        const xc = shape.x
         const dist = getDistance( {x,y} , {x : shape.x ,y : shape.y})
         return dist<=shape.radius
     }
@@ -290,12 +289,11 @@ export function getShapeBounds(shape: Shape): {
 } {
   switch (shape.type) {
     case "Rect":
-      return {
-        x: shape.x,
-        y: shape.y,
-        width: shape.width,
-        height: shape.height
-      };
+      const x = Math.min(shape.x, shape.x + shape.width);
+      const y = Math.min(shape.y, shape.y + shape.height);
+      const width = Math.abs(shape.width);
+      const height = Math.abs(shape.height);
+      return { x, y, width, height };
 
     case "Circle":
       return {

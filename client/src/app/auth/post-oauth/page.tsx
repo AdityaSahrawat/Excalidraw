@@ -6,13 +6,14 @@ import axios from "axios";
 
 export default function PostAuthPage() {
   const router = useRouter();
+  const backendUrl = process.env.NEXT_PUBLIC_BackendURL
 
   useEffect(() => {
     const handleOAuth = async () => {
       const session = await getSession();
 
       if (session?.user?.email) {
-        await axios.post("http://localhost:3009/v1/user/oauth", {
+        await axios.post(`${backendUrl}/user/oauth`, {
           email: session.user.email,
           username: session.user.name,
         }, {

@@ -1,0 +1,36 @@
+name: 🚀 Deploy Client to Fly.io
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'client/**'
+      - '.github/workflows/fly-deploy-client.yml'
+  workflow_dispatch:  # manual trigger
+
+jobs:
+  deploy:
+    name: 🚀 Deploy Client
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🧾 Checkout code
+        uses: actions/checkout@v3
+
+      - name: 🐙 Set up Fly.io
+        uses: superfly/flyctl-actions/setup-flyctl@v1.4
+
+      - name: 🔐 Set FLY_API_TOKEN
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: echo "Token available"
+
+      - name: 🚀 Deploy Client to Fly.io
+        run: |
+          flyctl deploy \
+            --config client/fly.toml \
+            --dockerfile client/Dockerfile \
+            --context ./client \
+            --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}

@@ -79,7 +79,7 @@ wss.on('connection', async (ws, request) => {
 // Message Handlers
 const messageHandlers: Record<string, (data: any, user: User) => Promise<void>> = {
   subscribe: async (data, user) => {
-    const roomId = Number(data.roomId);
+    const roomId = data.roomId;
     if (isNaN(roomId)) return;
 
     const isAdmin = await prismaClient.room.findFirst({
@@ -89,13 +89,17 @@ const messageHandlers: Record<string, (data: any, user: User) => Promise<void>> 
     const isJoined = await prismaClient.joinedRooms.findFirst({
       where: {
          roomId,
-         userid : user.userId  
+         userId : user.userId  
         }
     });
 
     if (isAdmin || isJoined) {
       user.rooms.add(data.roomId);
       console.log(`User ${user.userId} subscribed to room ${data.roomId}`);
+      user.ws.send(JSON.stringify({
+        type : "subscribed",
+        reason : "You are subscribed to this room"
+      }))
     } else {
       console.warn(`Unauthorized subscribe attempt by ${user.userId} to room ${data.roomId}`);
       user.ws.send(JSON.stringify({
@@ -116,7 +120,7 @@ const messageHandlers: Record<string, (data: any, user: User) => Promise<void>> 
 
     await prismaClient.element.create({
       data: {
-        roomId: Number(roomId),
+        roomId: roomId,
         userId: user.userId,
         shape,
         shapeId
@@ -146,7 +150,7 @@ const messageHandlers: Record<string, (data: any, user: User) => Promise<void>> 
 
     const element = await prismaClient.element.findUnique({
       where: {
-        roomId: Number(roomId),
+        roomId: roomId,
         shapeId
       }
     });
@@ -156,7 +160,7 @@ const messageHandlers: Record<string, (data: any, user: User) => Promise<void>> 
     }
 
     await prismaClient.element.update({
-      where: { roomId: Number(roomId), shapeId },
+      where: { roomId: roomId, shapeId },
       data: { 
         shape : JSON.stringify(shape)
        }
@@ -174,7 +178,7 @@ const messageHandlers: Record<string, (data: any, user: User) => Promise<void>> 
     const { roomId, shapeId } = data;
     try {
       await prismaClient.element.delete({
-        where: { roomId: Number(roomId), shapeId }
+        where: { roomId: roomId, shapeId }
       });
       console.log("shape deleted")
       broadcastToRoom(roomId, user.userId, {

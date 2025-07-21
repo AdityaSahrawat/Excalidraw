@@ -34,6 +34,7 @@ export default function CreateRoomDialog({ onRoomCreated , roomCreated , setroom
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const BackendURL  = process.env.NEXT_PUBLIC_BackendURL
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -49,7 +50,7 @@ export default function CreateRoomDialog({ onRoomCreated , roomCreated , setroom
     const code = randomCode();
     try {
       await axios.post(
-        "http://localhost:3009/v1/web/room",
+        `${BackendURL}/web/room`,
         { name: name.trim(), code },
         { withCredentials : true}
       );
@@ -58,8 +59,9 @@ export default function CreateRoomDialog({ onRoomCreated , roomCreated , setroom
       setOpen(false);
       setroomCreated(!roomCreated);
       onRoomCreated();
-    } catch (e: any) {
-      setError(e?.response?.data?.message || "Could not create room.");
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
+      setError(err?.response?.data?.message || "Could not create room.");
     }
 
     setLoading(false);

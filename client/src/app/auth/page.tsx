@@ -1,16 +1,15 @@
 "use client"
-import { useEffect, useState } from "react";
+import {useState } from "react";
 import SignInForm from "./signinform"
 import SignUpForm from "./signupform"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useRouter } from "next/navigation";
-import { getSession, signIn, useSession } from "next-auth/react";
+import {signIn } from "next-auth/react";
 
 const Auth = () => {
   const [isSignUp, setIsSignUp] = useState(false);
   const router = useRouter();
-  const { data: session } = useSession();
 
 
   const handleAuthSuccess = () => {
@@ -19,12 +18,7 @@ const Auth = () => {
 
   const handleGoogleAuth = async() => {
     signIn("google" , {callbackUrl : "/auth/post-oauth"});
-
-    // handleAuthSuccess();
   };
-  useEffect(() => {
-    if (session?.backendToken) router.replace("/rooms");
-  }, [session, router]);
 
 
   return (

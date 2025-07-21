@@ -1,0 +1,9 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./zod-validation" },
+    { "path": "./database" },
+    { "path": "./http-backend" },
+    { "path": "./ws-backend" }
+  ]
+}

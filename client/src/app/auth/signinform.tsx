@@ -14,13 +14,14 @@ const SignInForm = ({ onSuccess }: SignInFormProps) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const backendUrl = process.env.NEXT_PUBLIC_BackendURL
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      const res = await axios.post("http://localhost:3009/v1/user/signin", {
+      const res = await axios.post(`${backendUrl}/user/signin`, {
         email,
         password,
       },{
@@ -32,9 +33,10 @@ const SignInForm = ({ onSuccess }: SignInFormProps) => {
       toast.success("Success! You have been signed in successfully.");
       
       onSuccess();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Sign in error:", error);
-      toast.error(error.response?.data?.message || "Failed to sign in. Please try again.");
+      const err = error as { response?: { data?: { message?: string } } };
+      toast.error(err.response?.data?.message || "Failed to sign in. Please try again.");
     } finally {
       setIsLoading(false);
     }

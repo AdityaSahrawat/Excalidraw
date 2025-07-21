@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "tsx src/index.ts",
-    "build": "tsc"
+    "build": "tsc -b"
   },
   "keywords": [],
   "author": "",
@@ -21,6 +21,7 @@
     "@types/jsonwebtoken": "^9.0.9",
     "cookie": "^1.0.2",
     "jsonwebtoken": "^9.0.2",
+    "tsconfig-paths": "^4.2.0",
     "ws": "^8.18.1"
   }
 }

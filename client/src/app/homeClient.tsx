@@ -2,20 +2,20 @@
 
 import { useEffect, useState } from 'react';
 import Hero from './hero';
-import jwt from 'jsonwebtoken';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { signOut } from 'next-auth/react';
-const jwt_secret = "123"
+import { toast } from 'sonner';
 const Index = () => {
   const [isAuth, setIsAuth] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter()
+  const BackendURL  = process.env.NEXT_PUBLIC_BackendURL
 
   useEffect(()=>{
     async function checkIsLoggedIn(){
       try{
-        const res = await axios.get('http://localhost:3009/v1/user/auth/status' , {
+        const res = await axios.get(`${BackendURL}/user/auth/status` , {
             withCredentials : true
           }
         )
@@ -28,7 +28,9 @@ const Index = () => {
           setIsAuth(false)
           setIsLoading(false)
         }
-      } catch (err) {
+      } catch (error : unknown) {
+        const err = error as { response?: { data?: { message?: string } } };
+        console.error(err.response?.data?.message || "error is checking auth")
         setIsAuth(false);
       } finally {
         setIsLoading(false);
@@ -40,11 +42,13 @@ const Index = () => {
 
   async function logout(){
     try {
-      const res = await axios.get('http://localhost:3009/v1/user/logout' ,{
+      await axios.get(`${BackendURL}/user/logout` ,{
         withCredentials : true
       })
-    }catch(e){
-      
+    }catch(error : unknown){
+      console.error("Sign in error:", error);
+      const err = error as { response?: { data?: { message?: string } } };
+      toast.error(err.response?.data?.message || "Failed to sign in. Please try again.");
     }
     
     await signOut({ callbackUrl: "/" });
@@ -92,7 +96,7 @@ const Index = () => {
             <div className="mt-16 text-center">
               <div className="inline-flex items-center gap-2 px-6 py-3 bg-green-100 text-green-800 rounded-full border border-green-200">
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="font-medium">Welcome back! You're authenticated and ready to create.</span>
+                <span className="font-medium">Welcome back! You&apos;re authenticated and ready to create.</span>
               </div>
             </div>
           )}

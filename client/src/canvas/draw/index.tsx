@@ -3,7 +3,6 @@ import { getExistingShapes } from "./http";
 import { refreshCanvas } from "./drawing";
 import {HandleMouseDown,HandleMouseMove,HandleMouseUp,HandleWheel,} from "./handlers";
 import { AllShapes, Shape, State } from "../types";
-import { cva } from "class-variance-authority";
 
 export type DrawProps = {
   strokeWidth: number;
@@ -13,7 +12,7 @@ export type DrawProps = {
   selectedTool: AllShapes;
 };
 
-export default async function initDraw(canvas: HTMLCanvasElement,roomId: string,socket: WebSocket , drawProps :React.RefObject<DrawProps> ) {
+export default async function initDraw(canvas: HTMLCanvasElement,roomId: string,socket: WebSocket , drawProps :React.RefObject<DrawProps> , setSelectedShape : (shape : Shape | null)=> void ) {
   const ctx = canvas.getContext("2d");
   if (!ctx){
     return { 
@@ -75,6 +74,11 @@ const state: State = {
   const onMove = (e: MouseEvent) => HandleMouseMove(e, state, socket, roomId, ctx, canvas , drawProps);
   const onWheel = (e: WheelEvent) => HandleWheel(ctx, canvas, e, state , drawProps);
 
+  const mouseClick = ()=>{
+    setSelectedShape(state.selectedShape)
+  }
+
+  canvas.addEventListener("click" , mouseClick)
   canvas.addEventListener("mousedown", onDown);
   canvas.addEventListener("mousemove", onMove);
   canvas.addEventListener("mouseup",   onUp);
@@ -114,6 +118,8 @@ const state: State = {
     const shape = state.selectedShape
     state.existingShapes = state.existingShapes.filter((s)=>s.id != shape.id)
 
+    refreshCanvas(ctx! , canvas , state.existingShapes , state.selectedShape , state.canvasOffsetX , state.canvasOffsetY , state.canvasScale)
+
     if(socket.readyState === WebSocket.OPEN){
       socket.send(JSON.stringify({
         type : "deleteShape",
@@ -123,7 +129,6 @@ const state: State = {
       }))
     }
     state.selectedShape = null;
-    refreshCanvas(ctx! , canvas , state.existingShapes , state.selectedShape , state.canvasOffsetX , state.canvasOffsetY , state.canvasScale)
 
   }
 

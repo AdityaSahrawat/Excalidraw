@@ -1,0 +1,31 @@
+# Ignore all node_modules from all sub-packages
+**/node_modules
+node_modules
+
+# Ignore build outputs from all sub-packages
+**/dist
+dist
+
+# # Ignore environment variables
+# .env
+# .env.*
+# !.env.example  # (if you want to keep an example file)
+
+# Ignore logs
+*.log
+
+# Ignore editor config
+.vscode
+.idea
+
+# Ignore version control
+.git
+.gitignore
+
+# Ignore Docker files themselves
+Dockerfile
+.dockerignore
+
+# Optional: OS/macOS metadata
+.DS_Store
+Thumbs.db

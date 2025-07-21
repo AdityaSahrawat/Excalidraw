@@ -1,12 +1,18 @@
 {
-    "compilerOptions": {
-      "baseUrl": ".",
-      "paths": {
-        "@http/*": ["http-backend/src/*"],
-        "@zod/*": ["zodvalidation/src/*"],
-        "@db/*": ["database/src/*"],
-        "@ws/*": ["ws-backend/src/*"]
-      }
-    },
-    // "include": ["http-backend", "zodvalidation", "database", "ws-backend"]
+  "files": [],
+  "references": [
+    { "path": "./database" },
+    { "path": "./zod-validation" },
+    { "path": "./http-backend" },
+    { "path": "./ws-backend" }
+  ],
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@http/*": ["http-backend/src/*"],
+      "@zod/*": ["zod-validation/src/*"],
+      "@db/*": ["database/src/*"],
+      "@ws/*": ["ws-backend/src/*"]
+    }
   }
+}

@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "target": "es2016",
+    "module": "commonjs",
+    "esModuleInterop": true,
+    "baseUrl": ".",
+    "paths": {
+      "@db/*": ["database/dist/*"],
+      "@zod/*": ["zod-validation/dist/*"],
+      "@http/*": ["dist/*"],
+      "@ws/*": ["dist/*"],
+    } 
+  }
+}

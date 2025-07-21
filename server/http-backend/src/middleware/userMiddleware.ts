@@ -10,10 +10,11 @@ export function UserMiddleware(req: Request, res: Response, next: NextFunction):
     res.status(401).json({ message: "Unauthorized: No token provided" });
     return 
   }
+  console.log("token : ", token)
 
   try {
-    const decoded = jwt.verify(token, jwt_Secret) as { id: string };
-    req.userId = decoded.id;
+    const decoded = jwt.verify(token, jwt_Secret) as { userId: string };
+    req.userId = decoded.userId;
     next();
   } catch (error) {
     res.status(401).json({

@@ -4,7 +4,7 @@ import {joinRoom, roomSchema} from "@zod/index"
 import {prismaClient} from "@db/index"
 import { UserMiddleware } from "@http/middleware/userMiddleware";
 
-const webRouter = Router();
+const webRouter: Router = Router();
 
 webRouter.post('/room', UserMiddleware , async(req, res) => {
     const parseData = roomSchema.safeParse(req.body);
@@ -38,7 +38,7 @@ webRouter.post('/room', UserMiddleware , async(req, res) => {
 })
 
 webRouter.get('/element/:roomId', UserMiddleware , async (req , res)=>{
-    const roomId = Number(req.params.roomId);
+    const roomId = req.params.roomId;
     try{
         const elements = await prismaClient.element.findMany({
             where:{
@@ -57,14 +57,26 @@ webRouter.get('/element/:roomId', UserMiddleware , async (req , res)=>{
 
 webRouter.get('/rooms' , UserMiddleware , async(req , res)=>{
     const userId = req.userId
+    console.log("userId : " , userId)
+
 
     const rooms = await prismaClient.room.findMany({
         where : {
             adminId : userId
         }
     })
+    if(rooms){
+        console.log(rooms)
+    }
+    const joinedRooms = await prismaClient.joinedRooms.findMany({
+        where : {
+            userId : userId
+        }
+    })
+
+    
     res.status(200).json({
-        rooms
+        rooms , joinedRooms
     })
 })
 
@@ -81,7 +93,7 @@ webRouter.post('/join-room' , UserMiddleware , async(req , res)=>{
     try{
         const response = await prismaClient.room.findFirst({
             where : {
-                id : Number(parseData.data.roomId),
+                id : parseData.data.roomId,
                 code : parseData.data.code
             }
         })
@@ -101,8 +113,8 @@ webRouter.post('/join-room' , UserMiddleware , async(req , res)=>{
     try{
         await prismaClient.joinedRooms.create({
             data : {
-                userid : userId?? '',
-                roomId : Number(parseData.data.roomId)
+                userId : userId?? '',
+                roomId : parseData.data.roomId
             }
         })
 
@@ -132,7 +144,7 @@ webRouter.patch('/code/:roomId' , UserMiddleware , async(req , res)=>{
     try{
         await prismaClient.room.update({
             where : {
-                id : Number(roomId)
+                id : roomId
             },data : {
                 code : newCode
             }
@@ -161,7 +173,7 @@ webRouter.delete('/room/:roomId' , UserMiddleware  , async(req , res)=>{
         const room = await prismaClient.room.findFirst({
             where : {
                 adminId : userId,
-                id : Number(roomId)
+                id : roomId
             }
         })
         
@@ -181,12 +193,12 @@ webRouter.delete('/room/:roomId' , UserMiddleware  , async(req , res)=>{
         await prismaClient.$transaction([
             prismaClient.joinedRooms.deleteMany({
                 where : {
-                    roomId : Number(roomId)
+                    roomId : roomId
                 }
             }),
             prismaClient.room.delete({
                 where : {
-                    id : Number(roomId)
+                    id : roomId
                 }
             })
         ])

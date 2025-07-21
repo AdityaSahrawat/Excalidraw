@@ -7,7 +7,7 @@ import RoomSkeleton from "./roomSkeleton";
 import RoomCard from "./roomCard";
 import CreateRoomDialog from "./createRoomDialog";
 import RoomActions from "./roomAction";
-import { PlusCircle, DoorClosed, Loader2 ,ArrowLeft } from "lucide-react";
+import {DoorClosed, Loader2 ,ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 type Room = {
@@ -17,7 +17,6 @@ type Room = {
   code: string; 
 };
 
-const backend_url = "http://localhost:3009";
 
 const Index = () => {
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -25,11 +24,12 @@ const Index = () => {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const [roomCreated , setroomCreated] = useState<boolean>(false)
+  const BackendURL  = process.env.NEXT_PUBLIC_BackendURL
 
   function fetchRooms() {
     setLoading(true);
     setError(null);
-    axios.get(`${backend_url}/v1/web/rooms`, {
+    axios.get(`${BackendURL}/web/rooms`, {
         withCredentials : true
       })
       .then((response) => {
@@ -44,7 +44,6 @@ const Index = () => {
 
   useEffect(() => {
     fetchRooms();
-    // eslint-disable-next-line
   }, []);
 
   useEffect(()=>{
@@ -107,7 +106,7 @@ const Index = () => {
             <DoorClosed className="h-10 w-10 text-muted-foreground mb-2" />
             <h3 className="text-xl font-semibold mb-1">No rooms found</h3>
             <p className="text-muted-foreground mb-4">
-              You haven't created any rooms yet.
+              You haven&apos;t created any rooms yet.
             </p>
             <CreateRoomDialog roomCreated={roomCreated} setroomCreated={setroomCreated} onRoomCreated={fetchRooms} />
           </div>

@@ -6,13 +6,9 @@ import { getCanvasPoints, getElementOnPointer, getPosiToShape, getShapeBounds, r
 
 
 export const HandleMouseDown = (ctx :CanvasRenderingContext2D , canvas : HTMLCanvasElement  , e: MouseEvent , state : State , drawProps :React.RefObject<DrawProps>)=>{
-    const strokeWidth = drawProps.current.strokeWidth
-    const fillColor = drawProps.current.fillColor
-    const opacity = drawProps.current.opacity
-    const strokeColor = drawProps.current.strokeColor
     const selectedTool = drawProps.current.selectedTool
     state.clicked = true
-    let {x : canvasX ,y : canvasY} = getCanvasPoints(e.clientX , e.clientY , canvas , state)
+    const {x : canvasX ,y : canvasY} = getCanvasPoints(e.clientX , e.clientY , canvas , state)
     state.startX = canvasX;
     state.startY = canvasY;
     if(selectedTool === "Pencil"){
@@ -71,7 +67,7 @@ export const HandleMouseUp = (e:MouseEvent , state : State , socket : WebSocket 
     
     e.stopPropagation();
     // e.stopImmediatePropagation();
-    let {x : canvasX ,y : canvasY} = getCanvasPoints(e.clientX , e.clientY , canvas , state)
+    const {x : canvasX ,y : canvasY} = getCanvasPoints(e.clientX , e.clientY , canvas , state)
 
     state.resizeHandle = null
 
@@ -180,11 +176,11 @@ export const HandleMouseMove = (e:MouseEvent , state : State , socket : WebSocke
     const strokeColor = drawProps.current.strokeColor
     const selectedTool = drawProps.current.selectedTool
     
-    let {x : canvasX ,y : canvasY} = getCanvasPoints(e.clientX , e.clientY , canvas , state);
+    const {x : canvasX ,y : canvasY} = getCanvasPoints(e.clientX , e.clientY , canvas , state);
     
     if(state.clicked && selectedTool === "Hand"){
-        let dx = (canvasX - state.lastPanx) * state.canvasScale;
-        let dy = (canvasY - state.lastPany) * state.canvasScale;
+        const dx = (canvasX - state.lastPanx) * state.canvasScale;
+        const dy = (canvasY - state.lastPany) * state.canvasScale;
 
         state.canvasOffsetX += dx;
         state.canvasOffsetY += dy;
@@ -295,8 +291,6 @@ export const HandleMouseMove = (e:MouseEvent , state : State , socket : WebSocke
         ctx.fill();
         
     }else if(selectedTool === "Pointer"){ 
-        // if(!selectedShape){return;}
-        // logic to move this shape
 
         if(state.resizeHandle && state.selectedShape){
             const updatedShape = {...state.selectedShape};
@@ -376,7 +370,7 @@ export const HandleWheel = (ctx :CanvasRenderingContext2D , canvas : HTMLCanvasE
     if(selectedTool != "Hand"){return}
     e.preventDefault();
     const rect = canvas.getBoundingClientRect();
-    let {x : canvasX ,y : canvasY} = getCanvasPoints(e.clientX , e.clientY , canvas , state)
+    const {x : canvasX ,y : canvasY} = getCanvasPoints(e.clientX , e.clientY , canvas , state)
 
     const mouseX = canvasX - rect.left;
     const mouseY = canvasY - rect.top;
@@ -461,73 +455,70 @@ function handleRectResize(shape: Shape, handle: string, deltaX: number, deltaY: 
     //     shape.y += shape.height;
     //     shape.height = Math.abs(shape.height);
     // }
-}
+}   
 
 function handleCircleResize(shape: Shape, handle: string, deltaX: number, deltaY: number) {
-    if(shape.type != "Circle") return;
-    
-    // Determine direction multipliers based on handle position
-    let xDir = 1;
-    let yDir = 1;
-    
-    switch(handle) {
-        case "top-left":
-            xDir = -1;
-            yDir = -1;
-            break;
-        case "top-right":
-            xDir = 1;
-            yDir = -1;
-            break;
-        case "bottom-left":
-            xDir = -1;
-            yDir = 1;
-            break;
-        case "bottom-right":
-            xDir = 1;
-            yDir = 1;
-            break;
-        case "top":
-            yDir = -1;
-            break;
-        case "bottom":
-            yDir = 1;
-            break;
-        case "left":
-            xDir = -1;
-            break;
-        case "right":
-            xDir = 1;
-            break;
-    }
-    
-    // Calculate scale factors with direction
-    const scaleX = 1 + (xDir * deltaX) / shape.radius;
-    const scaleY = 1 + (yDir * deltaY) / shape.radius;
-    
-    // Apply scaling
-    switch(handle) {
-        case "top-left":
-        case "top-right":
-        case "bottom-left":
-        case "bottom-right":
-            // For corners, average both directions
-            shape.radius *= Math.max(0.1, (scaleX + scaleY) / 2);
-            break;
-        case "top":
-        case "bottom":
-            // Only vertical scaling
-            shape.radius *= Math.max(0.1, scaleY);
-            break;
-        case "left":
-        case "right":
-            // Only horizontal scaling
-            shape.radius *= Math.max(0.1, scaleX);
-            break;
-    }
-    
-    // Ensure minimum radius
-    shape.radius = Math.max(1, shape.radius);
+  if (shape.type !== "Circle") return;
+
+  // 1. Convert circle to bounding box
+  let boxX = shape.x - shape.radius;
+  let boxY = shape.y - shape.radius;
+  let boxW = shape.radius * 2;
+  let boxH = shape.radius * 2;
+
+  // 2. Resize box like a rectangle
+  switch (handle) {
+    case "top-left":
+      boxX += deltaX;
+      boxY += deltaY;
+      boxW -= deltaX;
+      boxH -= deltaY;
+      break;
+    case "top-right":
+      boxY += deltaY;
+      boxW += deltaX;
+      boxH -= deltaY;
+      break;
+    case "bottom-left":
+      boxX += deltaX;
+      boxW -= deltaX;
+      boxH += deltaY;
+      break;
+    case "bottom-right":
+      boxW += deltaX;
+      boxH += deltaY;
+      break;
+    case "top":
+      boxY += deltaY;
+      boxH -= deltaY;
+      break;
+    case "bottom":
+      boxH += deltaY;
+      break;
+    case "left":
+      boxX += deltaX;
+      boxW -= deltaX;
+      break;
+    case "right":
+      boxW += deltaX;
+      break;
+  }
+
+  // 3. Flip direction if width or height < 0
+  if (boxW < 0) {
+    boxX += boxW;
+    boxW = Math.abs(boxW);
+  }
+  if (boxH < 0) {
+    boxY += boxH;
+    boxH = Math.abs(boxH);
+  }
+
+  // 4. Make it a perfect circle again (average width & height)
+  const size = Math.max(10, (boxW + boxH) / 2); // Min radius = 5
+  shape.radius = size / 2;
+  shape.x = boxX + size / 2;
+  shape.y = boxY + size / 2;
 }
 
 function handleLineResize(shape: Shape, handle: string, deltaX: number, deltaY: number) {

@@ -13,7 +13,7 @@ const Hero = () => {
       <div className="space-y-8">
         <div className="space-y-6">
           <h1 className="text-5xl lg:text-6xl font-bold text-gray-900 leading-tight">
-            Collaborative Whiteboard for Everyone (dithub action )
+            Collaborative Whiteboard for Everyone (github action2 )
           </h1>
           <p className="text-xl text-gray-600 leading-relaxed">
             Draw. Share. Think Visually.

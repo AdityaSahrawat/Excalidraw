@@ -6,6 +6,21 @@
 app = 'sketchhub'
 primary_region = 'bom'
 
+[build.args] 
+  NEXT_PUBLIC_BackendURL = "${NEXT_PUBLIC_BackendURL}"
+  NEXT_PUBLIC_WsURL = "${NEXT_PUBLIC_WsURL}"
+  google_clientId  = "${google_clientId}"
+  google_clientSecret  = "${google_clientSecret}"
+  NEXTAUTH_SECRET  = "${NEXTAUTH_SECRET}"
+
+
+[env] 
+  NEXT_PUBLIC_BackendURL = "${NEXT_PUBLIC_BackendURL}"
+  NEXT_PUBLIC_WsURL = "${NEXT_PUBLIC_WsURL}"
+  google_clientId  = "${google_clientId}"
+  google_clientSecret  = "${google_clientSecret}"
+  NEXTAUTH_SECRET  = "${NEXTAUTH_SECRET}"
+
 [build]
 
 [http_service]

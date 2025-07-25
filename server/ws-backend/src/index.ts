@@ -2,11 +2,11 @@ import { WebSocket, WebSocketServer } from 'ws';
 import jwt from "jsonwebtoken";
 import { prismaClient } from "@db/index";
 import {parse} from "cookie"
-const jwt_Secret = "123";
+const jwt_Secret = process.env.jwt_Secret!;
+const ws_port = process.env.ws_port!;
 
-// Start WebSocket server
-const wss = new WebSocketServer({ port: 8080 }, () => {
-  console.log("WS Server running on port 8080");
+const wss = new WebSocketServer({ port : Number(ws_port)}, () => {
+  console.log("WS Server running on port " + ws_port);
 });
  
 interface User {
@@ -27,7 +27,6 @@ function checkUser(token: string): string | null {
 }
 
 
-// Connection handler
 wss.on('connection', async (ws, request) => {
 
   const cookieHeader = request.headers.cookie
@@ -76,7 +75,6 @@ wss.on('connection', async (ws, request) => {
   });
 });
 
-// Message Handlers
 const messageHandlers: Record<string, (data: any, user: User) => Promise<void>> = {
   subscribe: async (data, user) => {
     const roomId = data.roomId;

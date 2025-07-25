@@ -1,0 +1,33 @@
+name : DEPLOY http backend to fly.io
+
+on : 
+    push : 
+        branches : 
+            - dev
+        paths : 
+            - 'server/database/**'
+            - 'server/zodValidation/**'
+            - 'server/http-backend/**'
+
+jobs : 
+    deploy : 
+        name : Deloy on fly.io
+        runs-on : ubuntu-latest
+
+        steps : 
+            - name : Checkout code
+              uses : actions/checkout@v3
+
+            - name : set up Node.js
+              uses : actions/setup-node@v4
+              with : 
+                node-version : 20
+
+            - name : Install Fly.io CLI
+              uses : superfly/flyctl-actions/setup-flyclt@master
+
+            - name : Deploy http backend to Fly.io
+              working-directory : ./server
+              run : flyclt deploy --config fly.http.toml --remote-only
+              env : 
+                FLY_API_TOKEN : ${{ secrets.FLY_API_TOKEN }}

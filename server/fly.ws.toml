@@ -6,6 +6,16 @@
 app = 'ws-backend-app'
 primary_region = 'bom'
 
+[build-args]
+  ws_port = "${ws_port}"
+  jwt_Secret = "${jwt_Secret}"
+
+
+[env]
+  ws_port = "${ws_port}"
+  jwt_Secret = "${jwt_Secret}"
+
+
 [build]
   dockerfile = 'ws-backend/Dockerfile'
 

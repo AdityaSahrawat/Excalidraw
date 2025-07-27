@@ -4,6 +4,7 @@ on :
     push : 
         branches : 
             - dev
+            - main
         paths : 
             - 'server/database/**'
             - 'server/ws-backend/**'
@@ -21,9 +22,8 @@ jobs :
               uses : actions/setup-node@v4
               with : 
                 node-version : 20
-
             - name : Install Fly.io CLI
-              uses : superfly/flyctl-actions/setup-flyclt@master
+              uses : superfly/flyctl-actions/setup-flyctl@master
 
             - name : Deploy ws backend to Fly.io
               working-directory : ./server

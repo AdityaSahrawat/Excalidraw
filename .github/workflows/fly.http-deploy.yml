@@ -4,6 +4,7 @@ on :
     push : 
         branches : 
             - dev
+            - main
         paths : 
             - 'server/database/**'
             - 'server/zodValidation/**'

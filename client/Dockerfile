@@ -6,22 +6,15 @@ WORKDIR /app
 
 COPY package.json pnpm-lock.yaml ./
 
-RUN pnpm install --frozen-lockfil
+RUN pnpm install --frozen-lockfile
+
+ARG NEXT_PUBLIC_BACKEND_URL
+ENV NEXT_PUBLIC_BACKEND_URL=$NEXT_PUBLIC_BACKEND_URL
 
 COPY . .
 
-
-ARG NEXT_PUBLIC_BackendURL
-ARG NEXT_PUBLIC_WsURL
-ARG google_clientId
-ARG google_clientSecret
-
-ENV NEXT_PUBLIC_BackendURL=${NEXT_PUBLIC_BackendURL}
-ENV NEXT_PUBLIC_WsURL=${NEXT_PUBLIC_WsURL}
-ENV google_clientId=${google_clientId}
-ENV google_clientSecret=${google_clientSecret}
-
 RUN pnpm build
+
 
 FROM node:20-alpine3.20 AS runner
 
@@ -34,9 +27,6 @@ COPY --from=base /app/.next ./.next
 COPY --from=base /app/node_modules ./node_modules
 COPY --from=base /app/package.json ./package.json
 
-# COPY --from=base /app/.env ./.env
-
-
 EXPOSE 3000
 
-CMD ["pnpm","next" , "start"]
+CMD ["pnpm", "next", "start"]

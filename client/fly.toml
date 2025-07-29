@@ -6,6 +6,10 @@
 app = 'sketchhub'
 primary_region = 'bom'
 
+[build.args]
+NEXT_PUBLIC_BACKEND_URL = "https://http-backend-app.fly.dev/v1"
+
+
 [http_service]
   internal_port = 3000
   force_https = true

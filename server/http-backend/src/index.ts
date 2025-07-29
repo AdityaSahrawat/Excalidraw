@@ -10,10 +10,25 @@ const PORT_client = process.env.PORT_client
 
 const app = express();
 app.use(express.json());
-app.use(cors({
-  origin : `http://localhost:${PORT_client}`,
-  credentials : true
-}))
+
+const allowedOrigins = [
+  `http://localhost:${PORT_client}`,
+  "https://sketchhub.fly.dev"
+];
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+  })
+);
+
 app.use(cookieParser())
 // bhjbj,h
 

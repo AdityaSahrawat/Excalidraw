@@ -3,7 +3,9 @@ import {Shape, State } from "../types";
 
 
 export function refreshCanvas( ctx:CanvasRenderingContext2D ,canvas: HTMLCanvasElement, existingShapes : Shape[] , selectedShape: Shape | null , canvasOffSetX : number , canvasOffSetY: number , canvasScale: number ){
-    ctx.clearRect(0 , 0 , canvas.width , canvas.height);
+    ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform
+    ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear entire visible canvas
+
     ctx.fillStyle = 'rgba(0,0,0)';
     ctx.fillRect(0,0,canvas.width , canvas.height);
     ctx.save();

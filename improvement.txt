@@ -8,5 +8,17 @@
 
 4. add types to messages in ws = pending
 
+5. add resizing = done
 
-5. add rotation and resizing
+6. line/arrow selection and resizing error fix
+
+7. auto selection of created shape
+
+8. add text
+
+9. add current zoom value
+
+10. add transparent feature
+
+11. solve 10000... bugs!!
+

@@ -2,9 +2,14 @@ import { WebSocket, WebSocketServer } from 'ws';
 import jwt from "jsonwebtoken";
 import { prismaClient } from "@db/index";
 import {parse} from "cookie"
+
+import dotenv from "dotenv"
+dotenv.config()
+
+
 const jwt_Secret = process.env.jwt_Secret!;
 const ws_port = process.env.ws_port!;
-
+console.log(ws_port)
 const wss = new WebSocketServer({ port : Number(ws_port)}, () => {
   console.log("WS Server running on port " + ws_port);
 });
@@ -35,10 +40,14 @@ wss.on('connection', async (ws, request) => {
     ws.close(1000 , "no cookieHeader found");
     return;
   }
-
+  
   const cookies = parse(cookieHeader)
   const token = cookies.token;
-  const userId = token ? checkUser(token) : null;
+
+  if (!token) return ws.close(1000 , "token not found");
+  // console.log("token ; " , token)
+  const userId = checkUser(token)
+  // console.log("userId : " , userId)
 
 
   if (!userId) return ws.close(1000 , "userId not found");
@@ -46,22 +55,25 @@ wss.on('connection', async (ws, request) => {
   const user: User = { ws, rooms: new Set(), userId };
   users.set(ws, user);
 
-  console.log(`User connected: ${userId}`);
+  // console.log(`User connected: ${userId}`);
 
   ws.on('message', async (message) => {
     let data: any;
     try {
       data = typeof message === 'string' ? JSON.parse(message) : JSON.parse(message.toString());
+      console.log("data : , " , data)
     } catch (e) {
       console.warn("Invalid JSON:", message);
       return;
     }
 
     const handler = messageHandlers[data.type];
+    // console.log("handler ; " , handler)
 
 
     if (handler) {
       try {
+        // console.log("user as : " , user)
         await handler(data, user);
       } catch (err) {
         console.error(`Error handling ${data.type}:`, err);
@@ -71,40 +83,55 @@ wss.on('connection', async (ws, request) => {
 
   ws.on('close', () => {
     users.delete(ws);
-    console.log(`User disconnected: ${userId}`);
   });
 });
 
 const messageHandlers: Record<string, (data: any, user: User) => Promise<void>> = {
   subscribe: async (data, user) => {
     const roomId = data.roomId;
-    if (isNaN(roomId)) return;
+    if (!roomId){
+       return;
+    }
 
-    const isAdmin = await prismaClient.room.findFirst({
-      where: { id: roomId, adminId: user.userId }
-    });
+    try {
+      console.log("req came 1")
+      const isAdmin = await prismaClient.room.findFirst({
+        where: { id: roomId, adminId: user.userId }
+      });
+      console.log("req came 222")
+      const isJoined = await prismaClient.joinedRooms.findFirst({
+        where: {
+          roomId,
+          userId : user.userId  
+          }
+      });
+      console.log("req came 333")
 
-    const isJoined = await prismaClient.joinedRooms.findFirst({
-      where: {
-         roomId,
-         userId : user.userId  
-        }
-    });
-
-    if (isAdmin || isJoined) {
-      user.rooms.add(data.roomId);
-      console.log(`User ${user.userId} subscribed to room ${data.roomId}`);
-      user.ws.send(JSON.stringify({
-        type : "subscribed",
-        reason : "You are subscribed to this room"
-      }))
-    } else {
-      console.warn(`Unauthorized subscribe attempt by ${user.userId} to room ${data.roomId}`);
+      // console.log("joined or idadmin : , " , isAdmin , isJoined)
+      if (isAdmin || isJoined) {
+        user.rooms.add(data.roomId);
+        console.log(`User ${user.userId} subscribed to room ${data.roomId}`);
+        user.ws.send(JSON.stringify({
+          type : "subscribed",
+          reason : "You are subscribed to this room"
+        }))
+      } else {
+        console.warn(`Unauthorized subscribe attempt by ${user.userId} to room ${data.roomId}`);
+        user.ws.send(JSON.stringify({
+          type : "unauthorized",
+          reason : "You are not part of this room"
+        }))
+      }
+    } catch (error) {
+      console.warn("error in finding user auth")
       user.ws.send(JSON.stringify({
         type : "unauthorized",
-        reason : "You are not part of this room"
+        reason : "Internal server error "
       }))
     }
+
+
+    
   },
 
   unsubscribe: async (data, user) => {

@@ -1,4 +1,3 @@
-
 "use client";
 
 import { use, useEffect, useState } from "react";
@@ -7,8 +6,7 @@ import Canvas from "@/canvas/canvas";
 import { Button } from "@/components/ui/button";
 
 export default function CanvasPage({ params }: { params: Promise<{ roomId: string }> }) {
-  const { roomId } = use(params);
-  const WS_SERVER = process.env.NEXT_PUBLIC_WsURL!;
+  const { roomId } = use(params); // unwraps promise
   const router = useRouter();
 
   const [socket, setSocket] = useState<WebSocket | null>(null);
@@ -16,31 +14,22 @@ export default function CanvasPage({ params }: { params: Promise<{ roomId: strin
   const [isAuthorized, setIsAuthorized] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState(true);
   const [subscriptionSent, setSubscriptionSent] = useState(false);
-
-  const handleGoToRooms = () => {
-    router.push("/rooms");
-  };
-
+  const [isHydrated, setIsHydrated] = useState(false); 
 
   useEffect(() => {
-    if (!roomId) {
-      setConnectionError("No room ID provided");
-      setIsLoading(false);
-      return;
-    }
+    setIsHydrated(true);
+  }, []);
 
-    const ws = new WebSocket(WS_SERVER);
+  useEffect(() => {
+    if (!roomId || !isHydrated) return;
+
+    const ws = new WebSocket(process.env.NEXT_PUBLIC_WsURL!);
 
     ws.onopen = () => {
       console.log("✅ WebSocket Connected!");
       setSocket(ws);
-      
-      ws.send(JSON.stringify({
-        type: "subscribe",
-        roomId,
-      }));
+      ws.send(JSON.stringify({ type: "subscribe", roomId }));
       setSubscriptionSent(true);
-      console.log("📤 Subscription message sent, waiting for response...");
     };
 
     ws.onmessage = (event) => {
@@ -49,33 +38,21 @@ export default function CanvasPage({ params }: { params: Promise<{ roomId: strin
         console.log("📨 Received message:", data);
 
         if (data.type === "unauthorized") {
-          console.error("❌ Unauthorized access:", data.reason);
-          setConnectionError(data.reason || "Unauthorized access to this room.");
+          setConnectionError(data.reason || "Unauthorized access.");
           setIsAuthorized(false);
           setIsLoading(false);
           ws.close();
-          return;
-        }
-
-        if (data.type === "subscribed") {
-          console.log("✅ Successfully subscribed to room");
+        } else if (data.type === "subscribed") {
           setIsAuthorized(true);
           setIsLoading(false);
-          setConnectionError(null); // Clear any previous errors
-          return;
-        }
-
-        if (data.type === "error") {
-          console.error("❌ Server error:", data.message);
-          setConnectionError(data.message || "Server error occurred.");
+        } else if (data.type === "error") {
+          setConnectionError(data.message || "Server error.");
           setIsAuthorized(false);
           setIsLoading(false);
           ws.close();
-          return;
         }
-
-      } catch (parseError) {
-        console.error("❌ Failed to parse WebSocket message:", parseError);
+      } catch (err) {
+        console.error("❌ Failed to parse message:", err);
         setConnectionError("Invalid response from server.");
         setIsLoading(false);
       }
@@ -83,12 +60,12 @@ export default function CanvasPage({ params }: { params: Promise<{ roomId: strin
 
     ws.onerror = (error) => {
       console.error("❌ WebSocket Error:", error);
-      setConnectionError("Failed to connect to the server. Please check your connection.");
+      setConnectionError("Failed to connect to the server.");
       setIsLoading(false);
     };
 
     ws.onclose = (event) => {
-      console.warn(`⚠️ WebSocket closed. Code: ${event.code}, Reason: ${event.reason || 'No reason provided'}`);
+      console.warn(`⚠️ WebSocket closed. Code: ${event.code}, Reason: ${event.reason}`);
       if (!connectionError && !isAuthorized) {
         if (subscriptionSent) {
           setConnectionError("Connection lost while waiting for room authorization.");
@@ -104,7 +81,9 @@ export default function CanvasPage({ params }: { params: Promise<{ roomId: strin
         ws.close();
       }
     };
-  }, [roomId, connectionError, isAuthorized, subscriptionSent]);
+  }, [roomId, isHydrated]);
+
+  const handleGoToRooms = () => router.push("/rooms");
 
   if (isLoading) {
     return (
@@ -129,21 +108,11 @@ export default function CanvasPage({ params }: { params: Promise<{ roomId: strin
           <div className="text-gray-600 mb-6">
             {connectionError || "Access denied to this room."}
           </div>
-          <Button 
-            onClick={handleGoToRooms}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2"
-          >
-            Go to Rooms
-          </Button>
+          <Button onClick={handleGoToRooms}>Go to Rooms</Button>
         </div>
       </div>
     );
   }
 
-  // Success state - render Canvas
-  return (
-    <div>
-      <Canvas roomId={roomId!} socket={socket!} />
-    </div>
-  );
+  return <Canvas roomId={roomId} socket={socket!} />;
 }

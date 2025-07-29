@@ -15,7 +15,7 @@ const SignInForm = ({ onSuccess }: SignInFormProps) => {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL 
-  console.log("Backend URL:", backendUrl);
+  console.log("Backend URL using : (process.env.NEXT_PUBLIC_BACKEND_URL ):", backendUrl);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();

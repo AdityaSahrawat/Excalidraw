@@ -90,6 +90,7 @@ userRouter.post('/signin', async(req: Request, res : Response) => {
         })
     }catch(e){
         res.status(401).json({
+            error : e,
             message : "user Not found"
         })
     }

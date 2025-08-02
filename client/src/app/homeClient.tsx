@@ -11,6 +11,7 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter()
   const BackendURL  = process.env.NEXT_PUBLIC_BackendURL
+  console.log("BackendURL : " , BackendURL)
 
   useEffect(()=>{
     async function checkIsLoggedIn(){

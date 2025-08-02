@@ -5,7 +5,7 @@ import jwt from "jsonwebtoken"
 const userRouter: Router = Router();
 import {prismaClient} from "@db/index"
 import { userSchema , signinSchema , roomSchema } from "@zod/index"
-// const saltRound = process.env.saltRound
+// const saltRound = process.env.saltRound   sd
 dotenv.config()
 const jwt_secret = process.env.jwt_secret!
 

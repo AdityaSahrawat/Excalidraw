@@ -45,9 +45,7 @@ wss.on('connection', async (ws, request) => {
   const token = cookies.token;
 
   if (!token) return ws.close(1000 , "token not found");
-  // console.log("token ; " , token)
   const userId = checkUser(token)
-  // console.log("userId : " , userId)
 
 
   if (!userId) return ws.close(1000 , "userId not found");
@@ -55,7 +53,6 @@ wss.on('connection', async (ws, request) => {
   const user: User = { ws, rooms: new Set(), userId };
   users.set(ws, user);
 
-  // console.log(`User connected: ${userId}`);
 
   ws.on('message', async (message) => {
     let data: any;
@@ -68,12 +65,10 @@ wss.on('connection', async (ws, request) => {
     }
 
     const handler = messageHandlers[data.type];
-    // console.log("handler ; " , handler)
 
 
     if (handler) {
       try {
-        // console.log("user as : " , user)
         await handler(data, user);
       } catch (err) {
         console.error(`Error handling ${data.type}:`, err);
@@ -107,7 +102,6 @@ const messageHandlers: Record<string, (data: any, user: User) => Promise<void>> 
       });
       console.log("req came 333")
 
-      // console.log("joined or idadmin : , " , isAdmin , isJoined)
       if (isAdmin || isJoined) {
         user.rooms.add(data.roomId);
         console.log(`User ${user.userId} subscribed to room ${data.roomId}`);

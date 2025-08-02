@@ -6,20 +6,6 @@
 app = 'http-backend-app'
 primary_region = 'bom'
 
-[build-args]
-  PORT = "${PORT}"
-  saltRound = "${saltRound}"
-  jwt_secret = "${jwt_secret}"
-  PORT_client = "${PORT_client}"
-
-
-[env]
-  PORT = "${PORT}"
-  saltRound = "${saltRound}"
-  jwt_secret = "${jwt_secret}"
-  PORT_client = "${PORT_client}"
-
-
 [build]
   dockerfile = 'http-backend/Dockerfile'
 

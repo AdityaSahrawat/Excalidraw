@@ -343,8 +343,25 @@ export const HandleMouseMove = (e:MouseEvent , state : State , socket : WebSocke
                     handleCircleResize(updatedShape, state.resizeHandle, deltaX, deltaY);
                     break;
                 case "Line":
-                case "Arrow":
-                    handleLineResize(updatedShape, state.resizeHandle, deltaX, deltaY);
+                case "Arrow": {
+                    // Lines/arrows use special handles: line-start, line-end, edges retained otherwise
+                    if (state.resizeHandle === 'line-start' || state.resizeHandle === 'line-end') {
+                        const isEnd = state.resizeHandle === 'line-end';
+                        if (isEnd) {
+                            // Move end point: endx/endy are relative to start (x,y)
+                            updatedShape.endx += deltaX;
+                            updatedShape.endy += deltaY;
+                        } else {
+                            // Move start point: shift (x,y) and shorten/lengthen end by opposite delta
+                            updatedShape.x += deltaX;
+                            updatedShape.y += deltaY;
+                            updatedShape.endx -= deltaX;
+                            updatedShape.endy -= deltaY;
+                        }
+                    } else {
+                        handleLineResize(updatedShape, state.resizeHandle, deltaX, deltaY);
+                    }
+                    }
                     break;
                 case "Pencil":
                     handlePencilResize(updatedShape, state.resizeHandle, deltaX, deltaY);
@@ -572,39 +589,28 @@ function handleLineResize(shape: Shape, handle: string, deltaX: number, deltaY: 
     if(shape.type != "Line"){return}
     switch(handle) {
         case "top-left":
-            shape.x += deltaX;
-            shape.y += deltaY;
+            shape.x += deltaX; shape.y += deltaY;
+            shape.endx -= deltaX; shape.endy -= deltaY;
             break;
         case "top-right":
-            shape.endx += deltaX;
-            shape.y += deltaY;
+            shape.endx += deltaX; shape.y += deltaY;
+            shape.endy -= deltaY;
             break;
         case "bottom-left":
-            shape.x += deltaX;
-            shape.endy += deltaY;
+            shape.x += deltaX; shape.endy += deltaY;
+            shape.endx -= deltaX;
             break;
         case "bottom-right":
-            shape.endx += deltaX;
-            shape.endy += deltaY;
+            shape.endx += deltaX; shape.endy += deltaY;
             break;
         case "top":
-            case "bottom":
-            // For vertical resizing, adjust y components
-            if (handle === "top") {
-                shape.y += deltaY;
-            } else {
-                shape.endy += deltaY;
-            }
-            break;
+            shape.y += deltaY; shape.endy -= deltaY; break;
+        case "bottom":
+            shape.endy += deltaY; break;
         case "left":
+            shape.x += deltaX; shape.endx -= deltaX; break;
         case "right":
-            // For horizontal resizing, adjust x components
-            if (handle === "left") {
-                shape.x += deltaX;
-            } else {
-                shape.endx += deltaX;
-            }
-            break;
+            shape.endx += deltaX; break;
     }
 }
 

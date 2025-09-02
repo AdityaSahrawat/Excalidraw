@@ -356,6 +356,28 @@ export function getPosiToShape(x: number, y: number, shape: Shape | null): strin
   const bounds = getShapeBounds(shape);
   const padding = 6; // Changed from offset to padding to match drawSelectionUI
 
+  // Special handling for Line/Arrow: detect endpoints like our selection UI
+  if (shape.type === 'Line' || shape.type === 'Arrow') {
+    const start = { x: shape.x, y: shape.y };
+    const end = { x: shape.x + shape.endx, y: shape.y + shape.endy };
+    const threshold = 10; // px radius around endpoints
+
+    const distStart = Math.hypot(x - start.x, y - start.y);
+    if (distStart <= threshold) return 'line-start';
+    const distEnd = Math.hypot(x - end.x, y - end.y);
+    if (distEnd <= threshold) return 'line-end';
+
+    // Optional: detect rotation handle near perpendicular midpoint (matches drawSelectionUI)
+    const midX = (start.x + end.x) / 2;
+    const midY = (start.y + end.y) / 2;
+    const angle = Math.atan2(end.y - start.y, end.x - start.x);
+    const rotX = midX + Math.cos(angle + Math.PI / 2) * padding;
+    const rotY = midY + Math.sin(angle + Math.PI / 2) * padding;
+    if (Math.hypot(x - rotX, y - rotY) <= 8) return 'rotate';
+
+    return null;
+  }
+
   // Define the bounding box with padding (matches what's drawn in drawSelectionUI)
   const paddedBounds = {
     x: bounds.x - padding,

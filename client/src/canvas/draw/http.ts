@@ -2,7 +2,7 @@ import axios from "axios"
 
 
 export async function getExistingShapes (rootId :string){
-    const BackendURL  = process.env.NEXT_PUBLIC_BackendURL
+    const BackendURL  = process.env.NEXT_PUBLIC_BACKEND_URL
     const response = await axios.get(`${BackendURL}/web/element/${rootId}` , {
         withCredentials : true
     })

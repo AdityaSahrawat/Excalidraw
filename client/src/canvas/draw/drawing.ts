@@ -5,41 +5,48 @@ import {Shape, State } from "../types";
 export function refreshCanvas( ctx:CanvasRenderingContext2D ,canvas: HTMLCanvasElement, existingShapes : Shape[] , selectedShape: Shape | null , canvasOffSetX : number , canvasOffSetY: number , canvasScale: number ){
     ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform
     ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear entire visible canvas
-
-    ctx.fillStyle = 'rgba(0,0,0)';
-    ctx.fillRect(0,0,canvas.width , canvas.height);
     ctx.save();
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = 'rgba(0,0,0)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    
 
     ctx.setTransform(canvasScale, 0,0, canvasScale, canvasOffSetX, canvasOffSetY );
 
-      existingShapes.forEach( (shape)=>{
-          if(selectedShape?.id && shape.id === selectedShape.id){
-              drawSelectionUI(ctx , shape)
-          }
-          drawShape(ctx , shape)
-      })
+    existingShapes.forEach( (shape)=>{
+      if(selectedShape?.id && shape.id === selectedShape.id){
+        drawSelectionUI(ctx , shape)
+      }
+      drawShape(ctx , shape)
+    })
       ctx.restore();
     
 }
 
 export function drawShape(ctx : CanvasRenderingContext2D , shape : Shape){
-    ctx.globalAlpha = shape.opacity/100;
+  ctx.save();  
+  ctx.globalAlpha = shape.opacity/100;
     ctx.lineWidth = shape.strokeWidth
     ctx.strokeStyle = shape.strokeColor
     switch(shape.type){
         case "Rect":
-            ctx.fillStyle = shape.fillColor
             ctx.beginPath();
             ctx.rect(shape.x, shape.y, shape.width, shape.height);
-            ctx.fill();
+            if (shape.fillColor !== 'transparent') {
+              ctx.fillStyle = shape.fillColor;
+              ctx.fill();
+            }
             ctx.stroke();
             ctx.closePath();
           break;
         case "Circle" :
-            ctx.fillStyle = shape.fillColor;
             ctx.beginPath();
             ctx.arc(shape.x, shape.y, shape.radius, 0, Math.PI * 2);
-            ctx.fill();
+            if (shape.fillColor !== 'transparent') {
+              ctx.fillStyle = shape.fillColor;
+              ctx.fill();
+            }
             ctx.stroke();
             ctx.closePath();
             break;
@@ -92,6 +99,7 @@ export function drawShape(ctx : CanvasRenderingContext2D , shape : Shape){
             break;
 
     }
+    ctx.restore();
 }
 
 export function getElementOnPointer(x : number , y : number , shapes : Shape[]){    
@@ -444,7 +452,7 @@ export function getPosiToShape(x: number, y: number, shape: Shape | null): strin
 }
 
 export function getCanvasPoints(clientX: number, clientY: number, canvas: HTMLCanvasElement, state: State) {
-  const rect = canvas.getBoundingClientRect();
+  const rect = state.canvasRect ?? canvas.getBoundingClientRect();
   const x = (clientX - rect.left - state.canvasOffsetX) / state.canvasScale;
   const y = (clientY - rect.top - state.canvasOffsetY) / state.canvasScale;
   return { x, y };

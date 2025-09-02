@@ -24,7 +24,7 @@ const Index = () => {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const [roomCreated , setroomCreated] = useState<boolean>(false)
-  const BackendURL  = process.env.NEXT_PUBLIC_BackendURL
+  const BackendURL  = process.env.NEXT_PUBLIC_BACKEND_URL
 
   function fetchRooms() {
     setLoading(true);

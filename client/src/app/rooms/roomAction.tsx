@@ -15,9 +15,9 @@ export default function RoomActions({ roomId, currentCode, onCodeChanged, onRoom
   const [deleting, setDeleting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const BackendURL  = process.env.NEXT_PUBLIC_BackendURL
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL
 
-  const joinUrl = `${BackendURL}/web/join-room/${roomId}?roomId=${roomId}&code=${currentCode}`;
+  const joinUrl = `${backendUrl}/web/join-room/${roomId}?roomId=${roomId}&code=${currentCode}`;
 
   async function handleChangeCode() {
     setChangingCode(true);
@@ -31,7 +31,7 @@ export default function RoomActions({ roomId, currentCode, onCodeChanged, onRoom
       }
 
       await axios.patch(
-        `${BackendURL}/web/code/${roomId}`,{
+        `${backendUrl}/web/code/${roomId}`,{
            newCode 
           },{
              withCredentials : true
@@ -53,7 +53,7 @@ export default function RoomActions({ roomId, currentCode, onCodeChanged, onRoom
     setMessage(null);
     setError(null);
     try {
-      await axios.delete(`${BackendURL}/web/room/${roomId}`, {
+      await axios.delete(`${backendUrl}/web/room/${roomId}`, {
         withCredentials : true
       });
       setMessage("Room deleted.");

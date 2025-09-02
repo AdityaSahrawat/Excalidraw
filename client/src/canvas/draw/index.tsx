@@ -2,25 +2,12 @@
 import { getExistingShapes } from "./http";
 import { refreshCanvas } from "./drawing";
 import {HandleMouseDown,HandleMouseMove,HandleMouseUp,HandleWheel,} from "./handlers";
-import { AllShapes, Shape, State } from "../types";
+import { DrawAPI, DrawProps, Shape, State } from "../types";
 
-export type DrawProps = {
-  strokeWidth: number;
-  fillColor: string;
-  opacity: number;
-  strokeColor: string;
-  selectedTool: AllShapes;
-};
 
-export default async function initDraw(canvas: HTMLCanvasElement,roomId: string,socket: WebSocket , drawProps :React.RefObject<DrawProps> , setSelectedShape : (shape : Shape | null)=> void ) {
+export default async function initDraw(canvas: HTMLCanvasElement,roomId: string,socket: WebSocket , drawProps :React.RefObject<DrawProps> , setSelectedShape : (shape : Shape | null)=> void ): Promise<DrawAPI> {
   const ctx = canvas.getContext("2d");
-  if (!ctx){
-    return { 
-        updateStyle :()=> {},
-        cleanup: ()=> {} ,
-        deleteShape : ()=> {}
-    };
-  } 
+  
 
 const state: State = {
     existingShapes: [],
@@ -42,6 +29,18 @@ const state: State = {
     lastPanx: 0,
     lastPany: 0,
   };
+  if (!ctx){
+    return { 
+        updateStyle :()=> {},
+        cleanup: ()=> {} ,
+        deleteShape : ()=> {},
+  state : state,
+  setZoom: () => {},
+  zoomIn: () => {},
+  zoomOut: () => {},
+  resetZoom: () => {},
+    };
+  } 
 
   state.existingShapes = await getExistingShapes(roomId);
   refreshCanvas(ctx,canvas,state.existingShapes,state.selectedShape,state.canvasOffsetX,state.canvasOffsetY,state.canvasScale);
@@ -69,7 +68,7 @@ const state: State = {
     );
   };
 
-  const onUp   = (e: MouseEvent) => HandleMouseUp(e, state, socket, roomId, canvas , drawProps );
+  const onUp   = (e: MouseEvent) => HandleMouseUp(e,ctx, state, socket, roomId, canvas , drawProps );
   const onDown = (e: MouseEvent) => HandleMouseDown(ctx, canvas, e, state , drawProps);
   const onMove = (e: MouseEvent) => HandleMouseMove(e, state, socket, roomId, ctx, canvas , drawProps);
   const onWheel = (e: WheelEvent) => HandleWheel(ctx, canvas, e, state , drawProps);
@@ -82,7 +81,7 @@ const state: State = {
   canvas.addEventListener("mousedown", onDown);
   canvas.addEventListener("mousemove", onMove);
   canvas.addEventListener("mouseup",   onUp);
-  canvas.addEventListener("wheel",     onWheel);
+  canvas.addEventListener("wheel",     onWheel, { passive: false });
 
   function updateStyle(drawProps : DrawProps) {
     if (!state.clicked && state.selectedShape && drawProps.selectedTool === "Pointer") {
@@ -132,6 +131,23 @@ const state: State = {
 
   }
 
+  function setZoom(scale: number) {
+    const clamped = Math.min(5, Math.max(0.2, scale));
+    const rect = canvas.getBoundingClientRect();
+    // Zoom to center
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    const prevScale = state.canvasScale;
+    state.canvasScale = clamped;
+    state.canvasOffsetX = centerX - ((centerX - state.canvasOffsetX) / prevScale) * clamped;
+    state.canvasOffsetY = centerY - ((centerY - state.canvasOffsetY) / prevScale) * clamped;
+
+    refreshCanvas(ctx!, canvas, state.existingShapes, state.selectedShape, state.canvasOffsetX, state.canvasOffsetY, state.canvasScale);
+  }
+
+  function zoomIn() { setZoom(state.canvasScale * 1.1); }
+  function zoomOut() { setZoom(state.canvasScale / 1.1); }
+  function resetZoom() { setZoom(1); }
 
   function cleanup() {
     canvas.removeEventListener("mousedown", onDown);
@@ -144,5 +160,10 @@ const state: State = {
     updateStyle,
     cleanup,
     deleteShape,
+  state,
+  setZoom,
+  zoomIn,
+  zoomOut,
+  resetZoom
   };
 }

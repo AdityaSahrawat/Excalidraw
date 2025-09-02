@@ -70,9 +70,32 @@ export type State = {
     canvasScale : number , 
     lastPanx : number
     lastPany : number
+    // Perf helpers
+    rafId?: number | null;
+    canvasRect?: { left: number; top: number; width: number; height: number } | null;
 }
 
 export type strokeOptions = ["#FFFFFF", "#dc2626", "#2563eb", "#16a34a"];
 export type fillOptions = ["#FFFFFF", "#f05454", "#4d7ef0", "#3bbf6d"];
 export type strokeWidths = [1, 2, 3];
+
+export type DrawAPI = {
+  updateStyle: (props: DrawProps) => void;
+  cleanup: () => void;
+  deleteShape: () => void;
+    state: State; // ✅ ensure non-optional
+    setZoom: (scale: number) => void;
+    zoomIn: () => void;
+    zoomOut: () => void;
+    resetZoom: () => void;
+};
+
+export type DrawProps = {
+  strokeWidth: number;
+  fillColor: string;
+  opacity: number;
+  strokeColor: string;
+  selectedTool: AllShapes;
+};
+
 

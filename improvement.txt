@@ -12,13 +12,13 @@
 
 6. line/arrow selection and resizing error fix
 
-7. auto selection of created shape
+7. auto selection of created shape = done
 
 8. add text
 
-9. add current zoom value
+9. add current zoom value = done
 
-10. add transparent feature
+10. add transparent shape feature =
 
 11. solve 10000... bugs!!
 

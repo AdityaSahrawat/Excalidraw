@@ -57,14 +57,16 @@ userRouter.post("/signup", async(req: Request, res: Response) => {
 });
 
 userRouter.post('/signin', async(req: Request, res : Response) => {
+    console.log("1")
     const parseData = signinSchema.safeParse(req.body);
+    console.log("2")
     if (!parseData.success){
         res.json({
             message : "Incorrect Inputs"
         })
         return 
     }
-
+    console.log("3")
     try{
         const user = await prismaClient.user.findFirst({
             where:{
@@ -72,12 +74,14 @@ userRouter.post('/signin', async(req: Request, res : Response) => {
                 password : parseData.data.password
             }
         })
+        console.log("4")
         if(!user){
             res.status(403).json({
                 message : "not authorized"
             })
             return
         }
+        console.log("5")
         const token = jwt.sign({email : user.email , userId :user.id },jwt_secret)
 
 

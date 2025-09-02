@@ -8,7 +8,7 @@ import { useEffect } from "react";
 const JoinRoomPage = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const BackendURL = process.env.NEXT_PUBLIC_BackendURL
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL
 
   useEffect(() => {
     const roomId = searchParams.get("roomId");
@@ -20,7 +20,7 @@ const JoinRoomPage = () => {
     }
 
     async function checkAuth() {
-      const res = await axios.get(`${BackendURL}/user/auth/status`, {
+      const res = await axios.get(`${backendUrl}/user/auth/status`, {
         withCredentials: true,
       });
       return res.data.isAuth;
@@ -31,7 +31,7 @@ const JoinRoomPage = () => {
     async function joinRoom() {
       try {
         await axios.post(
-          `${BackendURL}/web/join-room`,
+          `${backendUrl}/web/join-room`,
           { roomId, code },
           { withCredentials: true }
         );

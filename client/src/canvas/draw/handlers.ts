@@ -1,9 +1,8 @@
 "use client"
 
-import { DrawProps } from ".";
-import { Shape, State } from "../types";
+import { Shape, State, DrawProps } from "../types";
 import { getCanvasPoints, getElementOnPointer, getPosiToShape, getShapeBounds, refreshCanvas } from "./drawing";
-
+import { useSeletedTool, useSideBarStore } from "../store";
 
 export const HandleMouseDown = (ctx :CanvasRenderingContext2D , canvas : HTMLCanvasElement  , e: MouseEvent , state : State , drawProps :React.RefObject<DrawProps>)=>{
     const selectedTool = drawProps.current.selectedTool
@@ -34,6 +33,17 @@ export const HandleMouseDown = (ctx :CanvasRenderingContext2D , canvas : HTMLCan
 
             state.movedShapeIndex = element.id;
 
+            const setStrokeWidth = useSideBarStore.getState().setStrokeWidth;
+            setStrokeWidth(element.strokeWidth)            
+            if(element.type == "Rect" || element.type === "Circle"){
+                const setFillColor = useSideBarStore.getState().setFillColor;
+                setFillColor(element.fillColor)  
+            }          
+            const setOpacity = useSideBarStore.getState().setOpacity;
+            setOpacity(element.opacity)            
+            const setStrokeColor = useSideBarStore.getState().setStrokeColor;
+            setStrokeColor(element.strokeColor)            
+
             // Only calculate offsets for shapes that have x/y properties
             if (element.type === "Rect" || element.type === "Circle" || 
                 element.type === "Line" || element.type === "Arrow") {
@@ -58,7 +68,7 @@ export const HandleMouseDown = (ctx :CanvasRenderingContext2D , canvas : HTMLCan
     }
 }
 
-export const HandleMouseUp = (e:MouseEvent , state : State , socket : WebSocket , roomId : string , canvas : HTMLCanvasElement , drawProps :React.RefObject<DrawProps> )=>{
+export const HandleMouseUp = (e:MouseEvent ,ctx : CanvasRenderingContext2D, state : State , socket : WebSocket , roomId : string , canvas : HTMLCanvasElement , drawProps :React.RefObject<DrawProps> )=>{
     const strokeWidth = drawProps.current.strokeWidth
     const fillColor = drawProps.current.fillColor
     const opacity = drawProps.current.opacity
@@ -157,7 +167,11 @@ export const HandleMouseUp = (e:MouseEvent , state : State , socket : WebSocket 
     }else{
         return;
     }
+    state.selectedShape = shape;
+    const setSelectedTool = useSeletedTool.getState().setSelectedTool;
+    setSelectedTool("Pointer");
     state.existingShapes.push(shape);
+    refreshCanvas(ctx! , canvas , state.existingShapes , state.selectedShape , state.canvasOffsetX , state.canvasOffsetY , state.canvasScale)  
     
     if (socket.readyState === WebSocket.OPEN) {
         socket.send(JSON.stringify({
@@ -176,6 +190,11 @@ export const HandleMouseMove = (e:MouseEvent , state : State , socket : WebSocke
     const strokeColor = drawProps.current.strokeColor
     const selectedTool = drawProps.current.selectedTool
     
+    // Cache rect once per frame to avoid layout thrash
+    if (!state.canvasRect) {
+        const r = canvas.getBoundingClientRect();
+        state.canvasRect = { left: r.left, top: r.top, width: r.width, height: r.height };
+    }
     const {x : canvasX ,y : canvasY} = getCanvasPoints(e.clientX , e.clientY , canvas , state);
     
     if(state.clicked && selectedTool === "Hand"){
@@ -187,7 +206,13 @@ export const HandleMouseMove = (e:MouseEvent , state : State , socket : WebSocke
 
         state.lastPanx = canvasX;
         state.lastPany = canvasY;
-        refreshCanvas(ctx , canvas  , state.existingShapes , state.selectedShape, state.canvasOffsetX , state.canvasOffsetY , state.canvasScale)
+        // Batch redraw using rAF for smoothness
+        if (state.rafId) cancelAnimationFrame(state.rafId);
+        state.rafId = requestAnimationFrame(() => {
+            refreshCanvas(ctx , canvas  , state.existingShapes , state.selectedShape, state.canvasOffsetX , state.canvasOffsetY , state.canvasScale)
+            state.canvasRect = null;
+            state.rafId = null;
+        });
     }
     if (selectedTool === "Hand") {
         document.body.style.cursor = state.clicked ? "grabbing" : "grab";
@@ -223,74 +248,87 @@ export const HandleMouseMove = (e:MouseEvent , state : State , socket : WebSocke
 
     const width = canvasX - state.startX;
     const height = canvasY - state.startY;
-    refreshCanvas(ctx , canvas , state.existingShapes , state.selectedShape, state.canvasOffsetX , state.canvasOffsetY , state.canvasScale);
-    
-    ctx.save();
-    ctx.setTransform(state.canvasScale, 0, 0, state.canvasScale, state.canvasOffsetX, state.canvasOffsetY);
-    ctx.globalAlpha = opacity/100;
-    ctx.lineWidth = strokeWidth
-    ctx.strokeStyle = strokeColor
-    if(selectedTool === "Rect"){
-        ctx.beginPath();
-        ctx.rect(state.startX, state.startY, width, height);
-        ctx.fillStyle = fillColor;
-        ctx.fill();
-        ctx.strokeStyle = strokeColor;
-        ctx.stroke();
-        ctx.closePath();
-    }else if (selectedTool === "Circle"){
-        ctx.fillStyle = fillColor;
-        let radius = Math.max(height , width)/2
-        if(radius <0){  radius = -radius}      //////////////////////////////////imp
-        ctx.beginPath();
-        ctx.arc(state.startX + width/2 ,state.startY + height/2 , radius ,0 , Math.PI * 2)
-        ctx.fill();
-        ctx.stroke();
-        
-    } else if(selectedTool === "Line"){
-        ctx.beginPath();
-        ctx.moveTo(state.startX , state.startY)
-        ctx.lineTo(state.startX + width , state.startY + height)
-        ctx.stroke()
-    }else if (selectedTool === "Pencil" && state.isDrawing){
-        state.currentPencilPath.push({x: canvasX , y: canvasY})
-        if(state.currentPencilPath.length >2){
-            ctx.lineCap = 'round'
-            ctx.lineJoin = 'round'
+    if (state.rafId) cancelAnimationFrame(state.rafId);
+    state.rafId = requestAnimationFrame(() => {
+        // Redraw base
+        refreshCanvas(ctx , canvas , state.existingShapes , state.selectedShape, state.canvasOffsetX , state.canvasOffsetY , state.canvasScale);
 
-            ctx.moveTo(state.currentPencilPath[0].x , state.currentPencilPath[0].y);
-            for(let i = 1;i<state.currentPencilPath.length ; i++){
-                ctx.lineTo(state.currentPencilPath[i].x , state.currentPencilPath[i].y)
+        // Draw the preview on top within the same frame
+        ctx.save();
+        ctx.setTransform(state.canvasScale, 0, 0, state.canvasScale, state.canvasOffsetX, state.canvasOffsetY);
+        ctx.globalAlpha = opacity/100;
+        ctx.lineWidth = strokeWidth
+        ctx.strokeStyle = strokeColor
+        if(selectedTool === "Rect"){
+            ctx.beginPath();
+            ctx.rect(state.startX, state.startY, width, height);
+            if (fillColor !== 'transparent') {
+              ctx.fillStyle = fillColor;
+              ctx.fill();
             }
+            ctx.stroke();
+            ctx.closePath();
+        }else if (selectedTool === "Circle"){
+            let radius = Math.max(height , width)/2
+            if(radius <0){  radius = -radius}
+            ctx.beginPath();
+            ctx.arc(state.startX + width/2 ,state.startY + height/2 , radius ,0 , Math.PI * 2)
+            if (fillColor !== 'transparent') {
+              ctx.fillStyle = fillColor;
+              ctx.fill();
+            }
+            ctx.stroke();
+            
+        } else if(selectedTool === "Line"){
+            ctx.beginPath();
+            ctx.moveTo(state.startX , state.startY)
+            ctx.lineTo(state.startX + width , state.startY + height)
             ctx.stroke()
-            ctx.closePath()
+        }else if (selectedTool === "Pencil" && state.isDrawing){
+            state.currentPencilPath.push({x: canvasX , y: canvasY})
+            if(state.currentPencilPath.length >2){
+                ctx.lineCap = 'round'
+                ctx.lineJoin = 'round'
 
-        }
-    }else if (selectedTool === "Arrow"){
-        ctx.beginPath();
-        ctx.moveTo(state.startX, state.startY);
-        ctx.lineTo(canvasX, canvasY);
-        ctx.stroke();
-    
-        // Calculate angle of the line
-        const angle = Math.atan2(canvasY - state.startY, canvasX - state.startX);
-        const headLength = 15;
-        ctx.fillStyle = "rgba(255, 255, 255)";
-        // Draw arrowhead
-        ctx.beginPath();
-        ctx.moveTo(canvasX, canvasY);
-        ctx.lineTo(
-            canvasX - headLength * Math.cos(angle - Math.PI / 6),
-            canvasY - headLength * Math.sin(angle - Math.PI / 6)
-        );
-        ctx.lineTo(
-            canvasX - headLength * Math.cos(angle + Math.PI / 6),
-            canvasY - headLength * Math.sin(angle + Math.PI / 6)
-        );
-        ctx.closePath();
-        ctx.fill();
+                ctx.moveTo(state.currentPencilPath[0].x , state.currentPencilPath[0].y);
+                for(let i = 1;i<state.currentPencilPath.length ; i++){
+                    ctx.lineTo(state.currentPencilPath[i].x , state.currentPencilPath[i].y)
+                }
+                ctx.stroke()
+                ctx.closePath()
+
+            }
+        }else if (selectedTool === "Arrow"){
+            ctx.beginPath();
+            ctx.moveTo(state.startX, state.startY);
+            ctx.lineTo(canvasX, canvasY);
+            ctx.stroke();
         
-    }else if(selectedTool === "Pointer"){ 
+            // Calculate angle of the line
+            const angle = Math.atan2(canvasY - state.startY, canvasX - state.startX);
+            const headLength = 15;
+            ctx.fillStyle = strokeColor;
+            // Draw arrowhead
+            ctx.beginPath();
+            ctx.moveTo(canvasX, canvasY);
+            ctx.lineTo(
+                canvasX - headLength * Math.cos(angle - Math.PI / 6),
+                canvasY - headLength * Math.sin(angle - Math.PI / 6)
+            );
+            ctx.lineTo(
+                canvasX - headLength * Math.cos(angle + Math.PI / 6),
+                canvasY - headLength * Math.sin(angle + Math.PI / 6)
+            );
+            ctx.closePath();
+            ctx.fill();
+        }
+        ctx.restore();
+
+        state.canvasRect = null;
+        state.rafId = null;
+    });
+
+    if(selectedTool === "Pointer"){ 
 
         if(state.resizeHandle && state.selectedShape){
             const updatedShape = {...state.selectedShape};
@@ -361,7 +399,7 @@ export const HandleMouseMove = (e:MouseEvent , state : State , socket : WebSocke
         refreshCanvas(ctx, canvas, state.existingShapes , state.selectedShape, state.canvasOffsetX , state.canvasOffsetY , state.canvasScale);
         return;
     }
-    ctx.restore();
+    // ctx.restore(); // moved into rAF callback
 }
 
 export const HandleWheel = (ctx :CanvasRenderingContext2D , canvas : HTMLCanvasElement  , e: WheelEvent , state : State , drawProps :React.RefObject<DrawProps>)=>{
@@ -369,7 +407,11 @@ export const HandleWheel = (ctx :CanvasRenderingContext2D , canvas : HTMLCanvasE
     
     if(selectedTool != "Hand"){return}
     e.preventDefault();
-    const rect = canvas.getBoundingClientRect();
+    if (!state.canvasRect) {
+        const r = canvas.getBoundingClientRect();
+        state.canvasRect = { left: r.left, top: r.top, width: r.width, height: r.height };
+    }
+    const rect = state.canvasRect;
     const {x : canvasX ,y : canvasY} = getCanvasPoints(e.clientX , e.clientY , canvas , state)
 
     const mouseX = canvasX - rect.left;
@@ -396,15 +438,20 @@ export const HandleWheel = (ctx :CanvasRenderingContext2D , canvas : HTMLCanvasE
         state.canvasOffsetX -= (e.deltaX * panSpeed) / state.canvasScale;
     }
 
-    refreshCanvas(
-        ctx,
-        canvas,
-        state.existingShapes,
-        state.selectedShape,
-        state.canvasOffsetX,
-        state.canvasOffsetY,
-        state.canvasScale
-    );
+    if (state.rafId) cancelAnimationFrame(state.rafId);
+    state.rafId = requestAnimationFrame(() => {
+        refreshCanvas(
+            ctx,
+            canvas,
+            state.existingShapes,
+            state.selectedShape,
+            state.canvasOffsetX,
+            state.canvasOffsetY,
+            state.canvasScale
+        );
+        state.canvasRect = null;
+        state.rafId = null;
+    });
 }
 
 function handleRectResize(shape: Shape, handle: string, deltaX: number, deltaY: number) {

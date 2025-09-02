@@ -10,46 +10,65 @@ const Index = () => {
   const [isAuth, setIsAuth] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter()
-  const BackendURL  = process.env.NEXT_PUBLIC_BackendURL
-  console.log("BackendURL : " , BackendURL)
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+  const buildUrl = (base: string, path: string) => {
+    const b = base.replace(/\/$/, '');
+    const p = path.replace(/^\//, '');
+    return `${b}/${p}`;
+  };
+  
+  // Helpful debug once; keep quiet in normal runs
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('Backend URL:', backendUrl);
+  }
 
-  useEffect(()=>{
-    async function checkIsLoggedIn(){
-      try{
-        const res = await axios.get(`${BackendURL}/user/auth/status` , {
-            withCredentials : true
-          }
-        )
-        console.log("red data : " ,res.data)
+  useEffect(() => {
+    let cancelled = false;
 
-        if(res.data.isAuth){
-          setIsAuth(true)
-          setIsLoading(false)
-        }else{
-          setIsAuth(false)
-          setIsLoading(false)
+    async function checkIsLoggedIn() {
+      if (!backendUrl) {
+        // No backend configured – treat as signed out but don't spam toasts repeatedly
+        if (!cancelled) {
+          setIsAuth(false);
+          setIsLoading(false);
+          toast.error('Backend URL is not configured. Set NEXT_PUBLIC_BACKEND_URL.');
         }
-      } catch (error : unknown) {
+        return;
+      }
+
+      try {
+        const url = buildUrl(backendUrl, 'user/auth/status');
+        const res = await axios.get(url, { withCredentials: true });
+
+        if (!cancelled) {
+          setIsAuth(Boolean(res.data?.isAuth));
+        }
+      } catch (error: unknown) {
         const err = error as { response?: { data?: { message?: string } } };
-        console.error(err.response?.data?.message || "error is checking auth")
-        setIsAuth(false);
+        console.error(err.response?.data?.message || 'Error checking auth');
+        if (!cancelled) setIsAuth(false);
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     }
-    checkIsLoggedIn()
-  },[])
+
+    checkIsLoggedIn();
+    return () => {
+      cancelled = true;
+    };
+  }, [backendUrl])
 
 
   async function logout(){
     try {
-      await axios.get(`${BackendURL}/user/logout` ,{
-        withCredentials : true
-      })
+      if (backendUrl) {
+  const url = buildUrl(backendUrl, 'user/logout');
+  await axios.get(url, { withCredentials: true });
+      }
     }catch(error : unknown){
-      console.error("Sign in error:", error);
+      console.error("Logout error:", error);
       const err = error as { response?: { data?: { message?: string } } };
-      toast.error(err.response?.data?.message || "Failed to sign in. Please try again.");
+      toast.error(err.response?.data?.message || "Failed to log out. Please try again.");
     }
     
     await signOut({ callbackUrl: "/" });
@@ -75,13 +94,13 @@ const Index = () => {
           </div>
 
           {isAuth ? (
-            <button onClick={()=>logout()} className='text-gray-600 border-black shadown-lg hover:cursor-pointer hover:text-gray-900'>
-              logout
-              </button>
+            <button onClick={()=>logout()} className='text-gray-600 border-black shadow-lg hover:cursor-pointer hover:text-gray-900'>
+              Log out
+            </button>
           ) : (
-            <button onClick={()=>{router.push('/auth')}} className='text-gray-600 border-2 p-2 rounded-md shadown-sm hover:cursor-pointer hover:text-gray-900'>
-              signin
-              </button>
+            <button onClick={()=>{router.push('/auth')}} className='text-gray-600 border-2 p-2 rounded-md shadow-sm hover:cursor-pointer hover:text-gray-900'>
+              Sign in
+            </button>
           )
         }
             

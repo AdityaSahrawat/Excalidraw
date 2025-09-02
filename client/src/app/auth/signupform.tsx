@@ -20,7 +20,8 @@ const SignUpForm = ({ onSuccess }: SignUpFormProps) => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const backendUrl = process.env.NEXT_PUBLIC_BackendURL
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL
+  console.log("api : " , backendUrl)
 
   const handleSendCode = async (e: React.FormEvent) => {
     e.preventDefault();

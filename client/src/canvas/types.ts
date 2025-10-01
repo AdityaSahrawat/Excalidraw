@@ -83,7 +83,7 @@ export type DrawAPI = {
   updateStyle: (props: DrawProps) => void;
   cleanup: () => void;
   deleteShape: () => void;
-    state: State; // ✅ ensure non-optional
+    state: State;
     setZoom: (scale: number) => void;
     zoomIn: () => void;
     zoomOut: () => void;

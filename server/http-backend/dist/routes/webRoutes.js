@@ -84,45 +84,30 @@ webRouter.post('/join-room', userMiddleware_1.UserMiddleware, (req, res) => __aw
     const parseData = index_1.joinRoom.safeParse(req.body);
     const userId = req.userId;
     if (!parseData.success) {
-        res.status(400).json({
-            message: "Invalid id or name"
-        });
+        res.status(400).json({ message: "Invalid roomId or code" });
         return;
     }
+    const { roomId, code } = parseData.data;
     try {
-        const response = yield index_2.prismaClient.room.findFirst({
-            where: {
-                id: parseData.data.roomId,
-                code: parseData.data.code
-            }
-        });
-        if (!response) {
-            res.status(400).json({
-                message: "room not found"
-            });
+        const room = yield index_2.prismaClient.room.findFirst({ where: { id: roomId, code } });
+        if (!room) {
+            res.status(404).json({ message: 'Room not found or code mismatch' });
             return;
         }
+        if (room.adminId === userId) {
+            res.status(400).json({ message: 'You are the admin of this room already' });
+            return;
+        }
+        const existing = yield index_2.prismaClient.joinedRooms.findFirst({ where: { roomId, userId: userId !== null && userId !== void 0 ? userId : '' } });
+        if (existing) {
+            res.status(200).json({ message: 'Already joined', already: true });
+            return;
+        }
+        yield index_2.prismaClient.joinedRooms.create({ data: { userId: userId !== null && userId !== void 0 ? userId : '', roomId } });
+        res.status(201).json({ message: 'Joined room successfully', already: false });
     }
     catch (e) {
-        res.status(500).json({
-            message: "error in finding room"
-        });
-    }
-    try {
-        yield index_2.prismaClient.joinedRooms.create({
-            data: {
-                userId: userId !== null && userId !== void 0 ? userId : '',
-                roomId: parseData.data.roomId
-            }
-        });
-        res.status(200).json({
-            message: "joined room successfully "
-        });
-    }
-    catch (e) {
-        res.status(500).json({
-            message: "error in joining room"
-        });
+        res.status(500).json({ message: 'Internal error joining room' });
     }
 }));
 webRouter.patch('/code/:roomId', userMiddleware_1.UserMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {

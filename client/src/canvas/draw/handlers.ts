@@ -56,7 +56,6 @@ export const HandleMouseDown = (ctx :CanvasRenderingContext2D , canvas : HTMLCan
                     state.endOffsetY = canvasY - (element.y + element.endy);
                 }
             } else if (element.type === "Pencil") {
-                // For pencil, use the first point as reference
                 const firstPoint = element.points[0];
                 state.offsetX = canvasX - firstPoint.x;
                 state.offsetY = canvasY - firstPoint.y;
@@ -190,7 +189,6 @@ export const HandleMouseMove = (e:MouseEvent , state : State , socket : WebSocke
     const strokeColor = drawProps.current.strokeColor
     const selectedTool = drawProps.current.selectedTool
     
-    // Cache rect once per frame to avoid layout thrash
     if (!state.canvasRect) {
         const r = canvas.getBoundingClientRect();
         state.canvasRect = { left: r.left, top: r.top, width: r.width, height: r.height };
@@ -206,7 +204,6 @@ export const HandleMouseMove = (e:MouseEvent , state : State , socket : WebSocke
 
         state.lastPanx = canvasX;
         state.lastPany = canvasY;
-        // Batch redraw using rAF for smoothness
         if (state.rafId) cancelAnimationFrame(state.rafId);
         state.rafId = requestAnimationFrame(() => {
             refreshCanvas(ctx , canvas  , state.existingShapes , state.selectedShape, state.canvasOffsetX , state.canvasOffsetY , state.canvasScale)
@@ -419,7 +416,14 @@ export const HandleMouseMove = (e:MouseEvent , state : State , socket : WebSocke
     // ctx.restore(); // moved into rAF callback
 }
 
-export const HandleWheel = (ctx :CanvasRenderingContext2D , canvas : HTMLCanvasElement  , e: WheelEvent , state : State , drawProps :React.RefObject<DrawProps>)=>{
+export const HandleWheel = (
+    ctx :CanvasRenderingContext2D,
+    canvas : HTMLCanvasElement,
+    e: WheelEvent,
+    state : State,
+    drawProps :React.RefObject<DrawProps>,
+    onZoomChange?: (scale: number) => void
+)=>{
     const selectedTool = drawProps.current.selectedTool
     
     if(selectedTool != "Hand"){return}
@@ -448,7 +452,8 @@ export const HandleWheel = (ctx :CanvasRenderingContext2D , canvas : HTMLCanvasE
     // Keep zoom centered on mouse position
         state.canvasOffsetX = mouseX - ((mouseX - state.canvasOffsetX) / prevScale) * newScale;
         state.canvasOffsetY = mouseY - ((mouseY - state.canvasOffsetY) / prevScale) * newScale;
-        state.canvasScale = newScale;
+    state.canvasScale = newScale;
+    if (onZoomChange) onZoomChange(state.canvasScale);
     } else {
         const panSpeed = 1; 
         state.canvasOffsetY -= (e.deltaY * panSpeed) / state.canvasScale;
@@ -568,7 +573,6 @@ function handleCircleResize(shape: Shape, handle: string, deltaX: number, deltaY
       break;
   }
 
-  // 3. Flip direction if width or height < 0
   if (boxW < 0) {
     boxX += boxW;
     boxW = Math.abs(boxW);
@@ -578,7 +582,6 @@ function handleCircleResize(shape: Shape, handle: string, deltaX: number, deltaY
     boxH = Math.abs(boxH);
   }
 
-  // 4. Make it a perfect circle again (average width & height)
   const size = Math.max(10, (boxW + boxH) / 2); // Min radius = 5
   shape.radius = size / 2;
   shape.x = boxX + size / 2;
@@ -620,17 +623,14 @@ function handlePencilResize(shape: Shape, handle: string, deltaX: number, deltaY
     const scaleX = 1 + deltaX / bounds.width;
     const scaleY = 1 + deltaY / bounds.height;
     
-    // Calculate center point
     const centerX = bounds.x + bounds.width / 2;
     const centerY = bounds.y + bounds.height / 2;
     
-    // Apply scaling relative to center
     shape.points = shape.points.map(point => {
         // Translate to origin
         let newX = point.x - centerX;
         let newY = point.y - centerY;
         
-        // Apply scaling based on handle
         switch(handle) {
             case "top-left":
             case "bottom-right":

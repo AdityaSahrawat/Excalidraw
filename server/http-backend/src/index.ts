@@ -3,17 +3,19 @@ import cors from "cors"
 import userRouter from "./routes/userRoutes";
 import webRouter from "./routes/webRoutes";
 import cookieParser from "cookie-parser"
-import dotenv from "dotenv"
-dotenv.config()
-const PORT = process.env.PORT!
-const PORT_client = process.env.PORT_client
+import dotenv from "dotenv";
+dotenv.config();
+import { Env } from "./config/env";
+const PORT = Env.PORT;
+const PORT_client = Env.PORT_CLIENT;
+const CLIENT_URL = Env.CLIENT_URL;
 
 const app = express();
 app.use(express.json());
 
 const allowedOrigins = [
   `http://localhost:${PORT_client}`,
-  "https://sketchhub.fly.dev"
+  CLIENT_URL
 ];
 
 app.use(
@@ -30,7 +32,6 @@ app.use(
 );
 
 app.use(cookieParser())
-// bhjbj,h
 
 app.use("/v1/user" , userRouter)
 app.use("/v1/web" , webRouter )

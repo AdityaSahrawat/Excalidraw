@@ -1,24 +1,22 @@
 import nodemailer from 'nodemailer';
-import dotenv from "dotenv"
+import bcrypt from 'bcryptjs';
 import { Router, Request, Response } from "express";
 import jwt from "jsonwebtoken"
 const userRouter: Router = Router();
 import {prismaClient} from "@db/index"
 import { userSchema , signinSchema , roomSchema } from "@zod/index"
-// const saltRound = process.env.saltRound   sd
-dotenv.config()
-const jwt_secret = process.env.jwt_secret!
+import { Env } from "../config/env";
+const jwt_secret = Env.JWT_SECRET;
+const BCRYPT_ROUNDS = Env.BCRYPT_ROUNDS;
 
 userRouter.post("/signup", async(req: Request, res: Response) => {
     const {username , email , password } = req.body 
-
     if(!username || !email || !password){
         res.status(403).json({
             message : "send username , email , password"
         })
         return;
     }
-    
     try {
         const userExists = await prismaClient.user.findFirst({
             where : {
@@ -32,10 +30,11 @@ userRouter.post("/signup", async(req: Request, res: Response) => {
             })
             return;
         }
+        const hashed = await bcrypt.hash(password, BCRYPT_ROUNDS);
         const user = await prismaClient.user.create({
             data: {
                 email,
-                password,
+                password: hashed,
                 username,
                 provider : "manual",
             }
@@ -57,31 +56,29 @@ userRouter.post("/signup", async(req: Request, res: Response) => {
 });
 
 userRouter.post('/signin', async(req: Request, res : Response) => {
-    console.log("1")
     const parseData = signinSchema.safeParse(req.body);
-    console.log("2")
     if (!parseData.success){
         res.json({
             message : "Incorrect Inputs"
         })
         return 
     }
-    console.log("3")
     try{
         const user = await prismaClient.user.findFirst({
             where:{
                 email: parseData.data.email,
-                password : parseData.data.password
+                provider: "manual"
             }
         })
-        console.log("4")
-        if(!user){
-            res.status(403).json({
-                message : "not authorized"
-            })
-            return
+        if(!user || !user.password){
+            res.status(403).json({ message : "not authorized" });
+            return;
         }
-        console.log("5")
+        const isValid = await bcrypt.compare(parseData.data.password, user.password);
+        if(!isValid){
+            res.status(403).json({ message : "not authorized" });
+            return;
+        }
         const token = jwt.sign({email : user.email , userId :user.id },jwt_secret)
 
 
@@ -144,7 +141,6 @@ userRouter.post("/oauth", async(req: Request, res: Response) => {
     });
     return;
   } catch (error) {
-    console.error("OAuth error:", error);
     res.status(500).json({
       message: "Internal server error",
       error,
@@ -209,10 +205,10 @@ userRouter.post("/send-code" , async (req : Request , res : Response)=>{
         }
         // code to send code
         const transporter = nodemailer.createTransport({
-            service: 'gmail',
+            service: process.env.EMAIL_SERVICE || 'gmail',
             auth: {
-                user: 'v1codesender@gmail.com',
-                pass: 'welc dhux joam nyjw',
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS,
             },
         });
 
@@ -276,11 +272,12 @@ userRouter.post("/verify-code" , async (req : Request , res : Response)=>{
             return;
         }
 
+        const hashed = await bcrypt.hash(password, BCRYPT_ROUNDS);
         const user = await prismaClient.user.create({
             data : {
                 username ,
                 email,
-                password,
+                password: hashed,
                 provider : "manual"
             }
         })

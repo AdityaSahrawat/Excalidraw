@@ -5,7 +5,14 @@ import {HandleMouseDown,HandleMouseMove,HandleMouseUp,HandleWheel,} from "./hand
 import { DrawAPI, DrawProps, Shape, State } from "../types";
 
 
-export default async function initDraw(canvas: HTMLCanvasElement,roomId: string,socket: WebSocket , drawProps :React.RefObject<DrawProps> , setSelectedShape : (shape : Shape | null)=> void ): Promise<DrawAPI> {
+export default async function initDraw(
+  canvas: HTMLCanvasElement,
+  roomId: string,
+  socket: WebSocket,
+  drawProps: React.RefObject<DrawProps>,
+  setSelectedShape: (shape: Shape | null) => void,
+  onZoomChange?: (scale: number) => void
+): Promise<DrawAPI> {
   const ctx = canvas.getContext("2d");
   
 
@@ -71,7 +78,7 @@ const state: State = {
   const onUp   = (e: MouseEvent) => HandleMouseUp(e,ctx, state, socket, roomId, canvas , drawProps );
   const onDown = (e: MouseEvent) => HandleMouseDown(ctx, canvas, e, state , drawProps);
   const onMove = (e: MouseEvent) => HandleMouseMove(e, state, socket, roomId, ctx, canvas , drawProps);
-  const onWheel = (e: WheelEvent) => HandleWheel(ctx, canvas, e, state , drawProps);
+  const onWheel = (e: WheelEvent) => HandleWheel(ctx, canvas, e, state , drawProps, onZoomChange);
 
   const mouseClick = ()=>{
     setSelectedShape(state.selectedShape)
@@ -142,7 +149,8 @@ const state: State = {
     state.canvasOffsetX = centerX - ((centerX - state.canvasOffsetX) / prevScale) * clamped;
     state.canvasOffsetY = centerY - ((centerY - state.canvasOffsetY) / prevScale) * clamped;
 
-    refreshCanvas(ctx!, canvas, state.existingShapes, state.selectedShape, state.canvasOffsetX, state.canvasOffsetY, state.canvasScale);
+  refreshCanvas(ctx!, canvas, state.existingShapes, state.selectedShape, state.canvasOffsetX, state.canvasOffsetY, state.canvasScale);
+  onZoomChange?.(state.canvasScale);
   }
 
   function zoomIn() { setZoom(state.canvasScale * 1.1); }

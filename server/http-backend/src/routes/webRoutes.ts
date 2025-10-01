@@ -81,54 +81,34 @@ webRouter.get('/rooms' , UserMiddleware , async(req , res)=>{
 })
 
 webRouter.post('/join-room' , UserMiddleware , async(req , res)=>{
-    const parseData = joinRoom.safeParse(req.body);
-    const userId = req.userId
-
-    if(!parseData.success){
-        res.status(400).json({
-            message : "Invalid id or name"
-        })
-        return;
+  const parseData = joinRoom.safeParse(req.body);
+  const userId = req.userId;
+  if(!parseData.success){
+    res.status(400).json({ message : "Invalid roomId or code" });
+    return;
+  }
+  const { roomId, code } = parseData.data;
+  try {
+    const room = await prismaClient.room.findFirst({ where: { id: roomId, code } });
+    if(!room){
+      res.status(404).json({ message: 'Room not found or code mismatch' });
+      return;
     }
-    try{
-        const response = await prismaClient.room.findFirst({
-            where : {
-                id : parseData.data.roomId,
-                code : parseData.data.code
-            }
-        })
-
-        if(!response){
-            res.status(400).json({
-                message : "room not found"
-            })
-            return;
-        }
-    }catch(e){
-        res.status(500).json({
-            message : "error in finding room"
-        })
+    if(room.adminId === userId){
+      res.status(400).json({ message: 'You are the admin of this room already' });
+      return;
     }
-
-    try{
-        await prismaClient.joinedRooms.create({
-            data : {
-                userId : userId?? '',
-                roomId : parseData.data.roomId
-            }
-        })
-
-        res.status(200).json({
-            message : "joined room successfully "
-        })
-
-    }catch(e){
-        res.status(500).json({
-            message : "error in joining room"
-        })
+    const existing = await prismaClient.joinedRooms.findFirst({ where: { roomId, userId: userId ?? '' } });
+    if(existing){
+      res.status(200).json({ message: 'Already joined', already: true });
+      return;
     }
-    
-})
+    await prismaClient.joinedRooms.create({ data: { userId: userId ?? '', roomId } });
+    res.status(201).json({ message: 'Joined room successfully', already: false });
+  } catch (e) {
+    res.status(500).json({ message: 'Internal error joining room' });
+  }
+});
 
 webRouter.patch('/code/:roomId' , UserMiddleware , async(req , res)=>{
     

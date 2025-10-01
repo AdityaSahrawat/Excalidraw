@@ -354,20 +354,18 @@ export function getPosiToShape(x: number, y: number, shape: Shape | null): strin
 
   const handleSize = 8;
   const bounds = getShapeBounds(shape);
-  const padding = 6; // Changed from offset to padding to match drawSelectionUI
+  const padding = 6;
 
-  // Special handling for Line/Arrow: detect endpoints like our selection UI
   if (shape.type === 'Line' || shape.type === 'Arrow') {
     const start = { x: shape.x, y: shape.y };
     const end = { x: shape.x + shape.endx, y: shape.y + shape.endy };
-    const threshold = 10; // px radius around endpoints
+    const threshold = 10;
 
     const distStart = Math.hypot(x - start.x, y - start.y);
     if (distStart <= threshold) return 'line-start';
     const distEnd = Math.hypot(x - end.x, y - end.y);
     if (distEnd <= threshold) return 'line-end';
 
-    // Optional: detect rotation handle near perpendicular midpoint (matches drawSelectionUI)
     const midX = (start.x + end.x) / 2;
     const midY = (start.y + end.y) / 2;
     const angle = Math.atan2(end.y - start.y, end.x - start.x);
@@ -378,7 +376,6 @@ export function getPosiToShape(x: number, y: number, shape: Shape | null): strin
     return null;
   }
 
-  // Define the bounding box with padding (matches what's drawn in drawSelectionUI)
   const paddedBounds = {
     x: bounds.x - padding,
     y: bounds.y - padding,
@@ -386,34 +383,28 @@ export function getPosiToShape(x: number, y: number, shape: Shape | null): strin
     height: bounds.height + padding * 2
   };
 
-  // Edge handles (top, right, bottom, left)
-  const edgeThreshold = 5; // How close to the edge to consider it a hit
+  const edgeThreshold = 5;
 
-  // Check top edge
   if (Math.abs(y - paddedBounds.y) < edgeThreshold && 
       x >= paddedBounds.x && x <= paddedBounds.x + paddedBounds.width) {
     return "top";
   }
 
-  // Check right edge
   if (Math.abs(x - (paddedBounds.x + paddedBounds.width)) < edgeThreshold && 
       y >= paddedBounds.y && y <= paddedBounds.y + paddedBounds.height) {
     return "right";
   }
 
-  // Check bottom edge
   if (Math.abs(y - (paddedBounds.y + paddedBounds.height)) < edgeThreshold && 
       x >= paddedBounds.x && x <= paddedBounds.x + paddedBounds.width) {
     return "bottom";
   }
 
-  // Check left edge
   if (Math.abs(x - paddedBounds.x) < edgeThreshold && 
       y >= paddedBounds.y && y <= paddedBounds.y + paddedBounds.height) {
     return "left";
   }
 
-  // Corner handles
   const cornerHandles = {
     "top-left": {
       x: paddedBounds.x - handleSize/2,
@@ -452,7 +443,6 @@ export function getPosiToShape(x: number, y: number, shape: Shape | null): strin
     }
   }
 
-  // Rotation handle
   const rotationHandle: Shape = {
     id: "-1",
     type: "Circle",

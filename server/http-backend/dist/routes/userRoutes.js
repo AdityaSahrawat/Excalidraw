@@ -13,15 +13,18 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const nodemailer_1 = __importDefault(require("nodemailer"));
+const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const express_1 = require("express");
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const userRouter = (0, express_1.Router)();
 const index_1 = require("@db/index");
 const index_2 = require("@zod/index");
-// const saltRound = process.env.saltRound
+// const saltRound = process.env.saltRound   sd
 dotenv_1.default.config();
-const jwt_secret = process.env.jwt_secret;
+const env_1 = require("../config/env");
+const jwt_secret = env_1.Env.JWT_SECRET;
+const BCRYPT_ROUNDS = env_1.Env.BCRYPT_ROUNDS;
 userRouter.post("/signup", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { username, email, password } = req.body;
     if (!username || !email || !password) {
@@ -42,10 +45,11 @@ userRouter.post("/signup", (req, res) => __awaiter(void 0, void 0, void 0, funct
             });
             return;
         }
+        const hashed = yield bcryptjs_1.default.hash(password, BCRYPT_ROUNDS);
         const user = yield index_1.prismaClient.user.create({
             data: {
                 email,
-                password,
+                password: hashed,
                 username,
                 provider: "manual",
             }
@@ -75,13 +79,16 @@ userRouter.post('/signin', (req, res) => __awaiter(void 0, void 0, void 0, funct
         const user = yield index_1.prismaClient.user.findFirst({
             where: {
                 email: parseData.data.email,
-                password: parseData.data.password
+                provider: "manual"
             }
         });
-        if (!user) {
-            res.status(403).json({
-                message: "not authorized"
-            });
+        if (!user || !user.password) {
+            res.status(403).json({ message: "not authorized" });
+            return;
+        }
+        const isValid = yield bcryptjs_1.default.compare(parseData.data.password, user.password);
+        if (!isValid) {
+            res.status(403).json({ message: "not authorized" });
             return;
         }
         const token = jsonwebtoken_1.default.sign({ email: user.email, userId: user.id }, jwt_secret);
@@ -95,6 +102,7 @@ userRouter.post('/signin', (req, res) => __awaiter(void 0, void 0, void 0, funct
     }
     catch (e) {
         res.status(401).json({
+            error: e,
             message: "user Not found"
         });
     }
@@ -139,7 +147,6 @@ userRouter.post("/oauth", (req, res) => __awaiter(void 0, void 0, void 0, functi
         return;
     }
     catch (error) {
-        console.error("OAuth error:", error);
         res.status(500).json({
             message: "Internal server error",
             error,
@@ -201,10 +208,10 @@ userRouter.post("/send-code", (req, res) => __awaiter(void 0, void 0, void 0, fu
         }
         // code to send code
         const transporter = nodemailer_1.default.createTransport({
-            service: 'gmail',
+            service: process.env.EMAIL_SERVICE || 'gmail',
             auth: {
-                user: 'v1codesender@gmail.com',
-                pass: 'welc dhux joam nyjw',
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS,
             },
         });
         function sendMail() {
@@ -260,11 +267,12 @@ userRouter.post("/verify-code", (req, res) => __awaiter(void 0, void 0, void 0, 
             });
             return;
         }
+        const hashed = yield bcryptjs_1.default.hash(password, BCRYPT_ROUNDS);
         const user = yield index_1.prismaClient.user.create({
             data: {
                 username,
                 email,
-                password,
+                password: hashed,
                 provider: "manual"
             }
         });

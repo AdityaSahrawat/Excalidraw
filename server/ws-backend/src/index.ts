@@ -3,17 +3,25 @@ import jwt from "jsonwebtoken";
 import { prismaClient } from "@db/index";
 import {parse} from "cookie"
 
-import dotenv from "dotenv"
-dotenv.config()
+import dotenv from "dotenv";
+dotenv.config();
+import { z } from 'zod';
 
-
-const jwt_Secret = process.env.jwt_Secret!;
-const ws_port = process.env.ws_port!;
-console.log(ws_port)
+const wsEnvSchema = z.object({
+  JWT_SECRET: z.string().min(5, 'JWT_SECRET too short'),
+  WS_PORT: z.string().regex(/^\d+$/).optional(),
+});
+const wsParsed = wsEnvSchema.safeParse(process.env);
+if (!wsParsed.success) {
+  console.error('❌ Invalid WS env', wsParsed.error.format());
+  process.exit(1);
+}
+const jwt_Secret = wsParsed.data.JWT_SECRET;
+const ws_port = wsParsed.data.WS_PORT
+const MAX_MESSAGE_BYTES = 64 * 1024; // 64KB safety limit
 const wss = new WebSocketServer({ port : Number(ws_port)}, () => {
   console.log("WS Server running on port " + ws_port);
 });
- //adadvasdvdfsdvs
 interface User {
   ws: WebSocket;
   rooms: Set<string>;
@@ -54,25 +62,38 @@ wss.on('connection', async (ws, request) => {
   users.set(ws, user);
 
 
+  (ws as any).isAlive = true;
+  ws.on('pong', () => { (ws as any).isAlive = true; });
+
   ws.on('message', async (message) => {
+    if (typeof message !== 'string' && !Buffer.isBuffer(message)) return;
+    const size = typeof message === 'string' ? Buffer.byteLength(message) : message.length;
+    if (size > MAX_MESSAGE_BYTES) {
+      console.warn('Payload too large');
+      ws.send(JSON.stringify({ type: 'error', reason: 'Payload too large' }));
+      return;
+    }
     let data: any;
     try {
       data = typeof message === 'string' ? JSON.parse(message) : JSON.parse(message.toString());
-      console.log("data : , " , data)
     } catch (e) {
-      console.warn("Invalid JSON:", message);
+      ws.send(JSON.stringify({ type: 'error', reason: 'Invalid JSON' }));
       return;
     }
-
+    if (!data || typeof data.type !== 'string') {
+      ws.send(JSON.stringify({ type: 'error', reason: 'Missing type' }));
+      return;
+    }
     const handler = messageHandlers[data.type];
-
-
-    if (handler) {
-      try {
-        await handler(data, user);
-      } catch (err) {
-        console.error(`Error handling ${data.type}:`, err);
-      }
+    if (!handler) {
+      ws.send(JSON.stringify({ type: 'error', reason: 'Unknown message type' }));
+      return;
+    }
+    try {
+      await handler(data, user);
+    } catch (err) {
+      console.error(`Error handling ${data.type}:`, err);
+      ws.send(JSON.stringify({ type: 'error', reason: 'Handler failure' }));
     }
   });
 
@@ -80,6 +101,14 @@ wss.on('connection', async (ws, request) => {
     users.delete(ws);
   });
 });
+
+function ensureSubscribed(user: User, roomId: string): boolean {
+  if (!user.rooms.has(roomId)) {
+    user.ws.send(JSON.stringify({ type: 'unauthorized', reason: 'Not subscribed to room' }));
+    return false;
+  }
+  return true;
+}
 
 const messageHandlers: Record<string, (data: any, user: User) => Promise<void>> = {
   subscribe: async (data, user) => {
@@ -89,35 +118,29 @@ const messageHandlers: Record<string, (data: any, user: User) => Promise<void>> 
     }
 
     try {
-      console.log("req came 1")
       const isAdmin = await prismaClient.room.findFirst({
         where: { id: roomId, adminId: user.userId }
       });
-      console.log("req came 222")
       const isJoined = await prismaClient.joinedRooms.findFirst({
         where: {
           roomId,
           userId : user.userId  
           }
       });
-      console.log("req came 333")
 
       if (isAdmin || isJoined) {
         user.rooms.add(data.roomId);
-        console.log(`User ${user.userId} subscribed to room ${data.roomId}`);
         user.ws.send(JSON.stringify({
           type : "subscribed",
           reason : "You are subscribed to this room"
         }))
       } else {
-        console.warn(`Unauthorized subscribe attempt by ${user.userId} to room ${data.roomId}`);
         user.ws.send(JSON.stringify({
           type : "unauthorized",
           reason : "You are not part of this room"
         }))
       }
     } catch (error) {
-      console.warn("error in finding user auth")
       user.ws.send(JSON.stringify({
         type : "unauthorized",
         reason : "Internal server error "
@@ -130,25 +153,24 @@ const messageHandlers: Record<string, (data: any, user: User) => Promise<void>> 
 
   unsubscribe: async (data, user) => {
     user.rooms.delete(data.roomId);
-    console.log(`User ${user.userId} unsubscribed from room ${data.roomId}`);
   },
 
   addShape: async (data, user) => {
     const { roomId, shape, shapeId } = data;
     if (!roomId || !shape || !shapeId) return;
-
+    if (!ensureSubscribed(user, roomId)) return;
+    const serialized = typeof shape === 'string' ? shape : JSON.stringify(shape);
     await prismaClient.element.create({
       data: {
-        roomId: roomId,
+        roomId,
         userId: user.userId,
-        shape,
+        shape: serialized,
         shapeId
       }
     });
-
     broadcastToRoom(roomId, user.userId, {
       type: "addShape",
-      shape,
+      shape: serialized,
       roomId,
       shapeId
     });
@@ -156,6 +178,8 @@ const messageHandlers: Record<string, (data: any, user: User) => Promise<void>> 
 
   moveShape: async (data, user) => {
     const { roomId, shape, shapeId } = data;
+    if (!roomId || !shapeId) return;
+    if (!ensureSubscribed(user, roomId)) return;
     broadcastToRoom(roomId, user.userId, {
       type: "moveShape",
       shape,
@@ -166,46 +190,42 @@ const messageHandlers: Record<string, (data: any, user: User) => Promise<void>> 
 
   updateShape: async (data, user) => {
     const { roomId, shape, shapeId } = data;
-
+    if (!roomId || !shapeId) return;
+    if (!ensureSubscribed(user, roomId)) return;
     const element = await prismaClient.element.findUnique({
-      where: {
-        roomId: roomId,
-        shapeId
-      }
+      where: { roomId, shapeId }
     });
-
     if (!element) {
-      return console.warn("Shape not found for update");
+      user.ws.send(JSON.stringify({ type: 'error', reason: 'Shape not found' }));
+      return;
     }
-
+    const serialized = typeof shape === 'string' ? shape : JSON.stringify(shape);
     await prismaClient.element.update({
-      where: { roomId: roomId, shapeId },
-      data: { 
-        shape : JSON.stringify(shape)
-       }
+      where: { roomId, shapeId },
+      data: { shape: serialized }
     });
-    console.log("shape updated ")
     broadcastToRoom(roomId, null, {
       type: "moveShape",
       roomId,
-      shape,
+      shape: serialized,
       shapeId
     });
   },
 
   deleteShape: async (data, user) => {
     const { roomId, shapeId } = data;
+    if (!roomId || !shapeId) return;
+    if (!ensureSubscribed(user, roomId)) return;
     try {
       await prismaClient.element.delete({
-        where: { roomId: roomId, shapeId }
+        where: { roomId, shapeId }
       });
-      console.log("shape deleted")
       broadcastToRoom(roomId, user.userId, {
         type: "deleteShape",
         shapeId
       });
     } catch (err) {
-      console.error("Failed to delete shape", err);
+      user.ws.send(JSON.stringify({ type: 'error', reason: 'Delete failed' }));
     }
   }
 };
@@ -218,11 +238,14 @@ function broadcastToRoom(roomId: string, senderId: string | null, data: any) {
   }
 }
 
-// Ping support
-// setInterval(() => {
-//   for (const [ws] of users.entries()) {
-//     if (ws.readyState === WebSocket.OPEN) {
-//       ws.ping();
-//     }
-//   }
-// }, 30000);
+// Heartbeat / keep-alive
+setInterval(() => {
+  for (const [ws] of users.entries()) {
+    if ((ws as any).isAlive === false) {
+      ws.terminate();
+      continue;
+    }
+    (ws as any).isAlive = false;
+    if (ws.readyState === WebSocket.OPEN) ws.ping();
+  }
+}, 30000);

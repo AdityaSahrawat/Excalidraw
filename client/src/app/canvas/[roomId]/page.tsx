@@ -6,7 +6,7 @@ import Canvas from "@/canvas/canvas";
 import { Button } from "@/components/ui/button";
 
 export default function CanvasPage({ params }: { params: Promise<{ roomId: string }> }) {
-  const { roomId } = use(params); // unwraps promise
+  const { roomId } = use(params);
   const router = useRouter();
 
   const [socket, setSocket] = useState<WebSocket | null>(null);

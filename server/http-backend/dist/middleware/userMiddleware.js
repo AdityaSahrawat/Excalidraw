@@ -5,7 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserMiddleware = UserMiddleware;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
-const jwt_Secret = "123"; // move to process.env.JWT_SECRET in real apps
+const jwt_Secret = process.env.JWT_SECRET || process.env.jwt_secret || ""; // fallback empty => will fail verify
 function UserMiddleware(req, res, next) {
     var _a;
     const token = (_a = req.cookies) === null || _a === void 0 ? void 0 : _a.token;

@@ -49,7 +49,14 @@ const Canvas = ({ roomId, socket }: CanvasProps) => {
     if (!canvas) return;
 
     setIsCanvasReady(false);
-    initDraw(canvas, roomId, socket, drawPropsRef, setSelectedShape).then((api) => {
+    initDraw(
+      canvas,
+      roomId,
+      socket,
+      drawPropsRef,
+      setSelectedShape,
+      (scale) => setZoom(scale)
+    ).then((api) => {
       drawAPIRef.current = api;
       setIsCanvasReady(true);
       if (api.state) {

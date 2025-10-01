@@ -3,7 +3,7 @@ import { CalendarDays } from "lucide-react";
 import { Card } from "@/components/ui/card";
 
 type Room = {
-  id: number;
+  id: string;
   name: string;
   createdAt: string;
 };

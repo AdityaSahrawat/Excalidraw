@@ -36,7 +36,6 @@ const Auth = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Google OAuth Button */}
           <Button 
             onClick={handleGoogleAuth}
             variant="outline" 
@@ -62,14 +61,11 @@ const Auth = () => {
             </div>
           </div>
 
-          {/* Auth Forms */}
           {isSignUp ? (
             <SignUpForm onSuccess={handleAuthSuccess} />
           ) : (
             <SignInForm onSuccess={handleAuthSuccess} />
           )}
-
-          {/* Toggle between Sign In / Sign Up */}
           <div className="text-center">
             <button
               onClick={() => setIsSignUp(!isSignUp)}

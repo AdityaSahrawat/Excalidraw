@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import axios from "axios";
 
 interface Props {
-  roomId: number;
+  roomId: string;
   currentCode: string;
   onCodeChanged: (newCode: string) => void;
   onRoomDeleted: () => void;

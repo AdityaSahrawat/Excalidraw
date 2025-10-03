@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <!-- Background circle -->
+  <circle cx="50" cy="50" r="45" fill="#3B63F0" stroke="#2B4AC7" stroke-width="2"/>
+  
+  <!-- Whiteboard rectangle -->
+  <rect x="20" y="25" width="60" height="40" rx="4" fill="white" stroke="#E2E8F0" stroke-width="1.5"/>
+  
+  <!-- Drawing elements on whiteboard -->
+  <!-- Circle -->
+  <circle cx="35" cy="38" r="5" fill="none" stroke="#F59E0B" stroke-width="2"/>
+  
+  <!-- Rectangle -->
+  <rect x="50" y="33" width="12" height="8" fill="none" stroke="#10B981" stroke-width="2"/>
+  
+  <!-- Arrow -->
+  <path d="M25 50 L40 50 M35 45 L40 50 L35 55" fill="none" stroke="#EF4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- Text lines -->
+  <line x1="50" y1="50" x2="70" y2="50" stroke="#6B7280" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="50" y1="55" x2="65" y2="55" stroke="#6B7280" stroke-width="1.5" stroke-linecap="round"/>
+  
+  <!-- Pen/marker -->
+  <g transform="translate(65, 70) rotate(-45)">
+    <rect x="-2" y="-8" width="4" height="16" rx="2" fill="#8B5CF6"/>
+    <rect x="-1" y="6" width="2" height="4" fill="#A78BFA"/>
+  </g>
+</svg>

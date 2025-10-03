@@ -1,6 +1,17 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# DrawBoard - Collaborative Whiteboard
 
-## Getting Started
+A powerful, real-time collaborative whiteboard application built with modern web technologies. Create, share, and collaborate on visual ideas with your team or students.
+
+## ✨ Features
+
+- **Real-time Collaboration**: Multiple users can draw simultaneously with live cursors
+- **Drawing Tools**: Comprehensive set of tools including shapes, arrows, text, and freehand drawing
+- **Room-based Sessions**: Create private rooms or join public drawing sessions
+- **Export Options**: Save your work as PNG, SVG, or JSON
+- **Responsive Design**: Works seamlessly on desktop and mobile devices
+- **Authentication**: Secure sign-in with Google OAuth and manual registration
+
+## 🚀 Getting Started
 
 First, run the development server:
 
@@ -10,27 +21,35 @@ npm run dev
 yarn dev
 # or
 pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🛠️ Tech Stack
 
-## Learn More
+- **Frontend**: Next.js, React, TypeScript, Tailwind CSS
+- **Backend**: Express.js, Node.js, WebSocket
+- **Database**: PostgreSQL with Prisma ORM
+- **Authentication**: NextAuth.js with Google OAuth
+- **Deployment**: Fly.io
 
-To learn more about Next.js, take a look at the following resources:
+## 📦 Project Structure
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+client/          # Next.js frontend application
+server/          # Backend services
+  ├── http-backend/    # REST API server
+  ├── ws-backend/      # WebSocket server
+  ├── database/        # Prisma database schema
+  └── zod-validation/  # Shared validation schemas
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 🌐 Live Demo
 
-## Deploy on Vercel
+Visit [https://sketchhub.fly.dev](https://sketchhub.fly.dev) to try the live application.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🤝 Contributing
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+We welcome contributions! Please feel free to submit a Pull Request.

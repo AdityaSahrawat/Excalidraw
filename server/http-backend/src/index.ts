@@ -15,15 +15,24 @@ app.use(express.json());
 
 const allowedOrigins = [
   `http://localhost:${PORT_client}`,
-  CLIENT_URL
-];
+  CLIENT_URL,
+  "https://sketchhub.fly.dev" // Add production domain explicitly
+].filter(Boolean); // Remove any undefined values
 
 app.use(
   cors({
     origin: function (origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+      
+      if (allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
+        console.error(`CORS blocked origin: ${origin}`);
+        console.log(`Allowed origins: ${allowedOrigins.join(', ')}`);
         callback(new Error("Not allowed by CORS"));
       }
     },

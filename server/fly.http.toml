@@ -9,6 +9,10 @@ primary_region = 'bom'
 [build]
   dockerfile = 'http-backend/Dockerfile'
 
+[env]
+  CLIENT_URL = "https://sketchhub.fly.dev"
+  PORT = "3009"
+
 [http_service]
   internal_port = 3009
   force_https = true

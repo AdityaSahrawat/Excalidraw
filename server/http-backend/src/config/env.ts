@@ -5,7 +5,7 @@ import { z } from "zod";
 const envSchema = z.object({
   PORT: z.string().regex(/^\d+$/),
   PORT_client: z.string().regex(/^\d+$/).optional(),
-  CLIENT_URL: z.string().url().optional(),
+  CLIENT_URL: z.string().url().optional().default("https://sketchhub.fly.dev"),
   JWT_SECRET: z.string().min(5, 'JWT_SECRET too short'),
   BCRYPT_ROUNDS: z.string().regex(/^\d+$/).optional(),
   EMAIL_SERVICE: z.string().optional(),

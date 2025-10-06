@@ -30,6 +30,15 @@ const SignInForm = ({ onSuccess }: SignInFormProps) => {
       });
       
       console.log("Sign in successful:", res.data);
+
+      // Ensure ws_token cookie exists (in case SameSite prevented set)
+      if (res.data?.token) {
+        const hasWs = typeof document !== 'undefined' && document.cookie.includes('ws_token=');
+        if (!hasWs) {
+          document.cookie = `ws_token=${res.data.token}; Path=/; SameSite=Lax`;
+          console.log('Set ws_token manually from response');
+        }
+      }
       
       toast.success("Success! You have been signed in successfully.");
       

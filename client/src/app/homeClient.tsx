@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Hero from './hero';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
-import { signOut } from 'next-auth/react';
+import { logout } from '@/lib/auth';
 import { toast } from 'sonner';
 const Index = () => {
   const [isAuth, setIsAuth] = useState(false);
@@ -59,20 +59,7 @@ const Index = () => {
   }, [backendUrl])
 
 
-  async function logout(){
-    try {
-      if (backendUrl) {
-  const url = buildUrl(backendUrl, 'user/logout');
-  await axios.get(url, { withCredentials: true });
-      }
-    }catch(error : unknown){
-      console.error("Logout error:", error);
-      const err = error as { response?: { data?: { message?: string } } };
-      toast.error(err.response?.data?.message || "Failed to log out. Please try again.");
-    }
-    
-    await signOut({ callbackUrl: "/" });
-  }
+  // Using shared logout function from lib/auth.ts
   
 
   if (isLoading) {

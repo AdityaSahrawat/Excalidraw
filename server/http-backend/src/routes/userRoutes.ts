@@ -39,17 +39,25 @@ userRouter.post("/signup", async(req: Request, res: Response) => {
                 provider : "manual",
             }
         });
-        const token = jwt.sign({ email: user.email, id: user.id },
+        const token = jwt.sign({ email: user.email, userId: user.id },
                 jwt_secret
             );
             
-        res.cookie("token", token, {
+        res
+        .cookie("token", token, {
             httpOnly: true,
-            sameSite: "lax",
-            secure : false
+            sameSite: process.env.NODE_ENV === 'production' ? "none" : "lax",
+            secure: process.env.NODE_ENV === 'production' ? true : false
         })
-        .status(200)
-        .json({ message: "verified and user created!" });
+        // Non-httpOnly mirror for WS query param usage (XSS exposure risk)
+    // WARNING: ws_token is readable by JS (XSS risk). Keep lifespan same as main token for now; consider shortening later.
+    .cookie("ws_token", token, {
+            httpOnly: false,
+            sameSite: process.env.NODE_ENV === 'production' ? "none" : "lax",
+            secure: process.env.NODE_ENV === 'production' ? true : false
+        })
+    .status(200)
+    .json({ message: "verified and user created!", token });
             } catch (error) {
                 res.status(500).json({ message: "Error creating user", error });
             }
@@ -82,12 +90,26 @@ userRouter.post('/signin', async(req: Request, res : Response) => {
         const token = jwt.sign({email : user.email , userId :user.id },jwt_secret)
 
 
+        // Set httpOnly cookie for security (used by backend/WebSocket)
         res.cookie("token" , token , {
             httpOnly : true,
-            sameSite : "lax",
-            secure : false
+            sameSite : process.env.NODE_ENV === 'production' ? "none" : "lax",
+            secure: process.env.NODE_ENV === 'production' ? true : false
+        })
+    // WARNING: non-httpOnly mirror for WebSocket URL usage.
+    .cookie("ws_token" , token , {
+            httpOnly : false,
+            sameSite : process.env.NODE_ENV === 'production' ? "none" : "lax",
+            secure: process.env.NODE_ENV === 'production' ? true : false
+        })
+        // Set accessible cookie for client-side auth checks
+        .cookie("auth_status" , "authenticated" , {
+            httpOnly : false,
+            sameSite : process.env.NODE_ENV === 'production' ? "none" : "lax",
+            secure: process.env.NODE_ENV === 'production' ? true : false
         }).status(200).json({
-            message : "signed in successfully!!"
+            message : "signed in successfully!!",
+            token
         })
     }catch(e){
         res.status(401).json({
@@ -131,14 +153,27 @@ userRouter.post("/oauth", async(req: Request, res: Response) => {
 
     const token = jwt.sign({ email: user.email, userId: user.id }, jwt_secret);
 
+    // Set httpOnly cookie for security (used by backend/WebSocket)
     res.cookie("token" , token , {
         httpOnly : true,
-        sameSite : "lax",
-        secure : false
-    }).status(200).json({
-      message: existingUser ? "User logged in" : "User registered",
-      token
-    });
+        sameSite : process.env.NODE_ENV === 'production' ? "none" : "lax",
+        secure: process.env.NODE_ENV === 'production' ? true : false
+    })
+    // WARNING: non-httpOnly mirror for WebSocket URL usage.
+    .cookie("ws_token" , token , {
+        httpOnly : false,
+        sameSite : process.env.NODE_ENV === 'production' ? "none" : "lax",
+        secure: process.env.NODE_ENV === 'production' ? true : false
+    })
+    // Set accessible cookie for client-side auth checks
+    .cookie("auth_status" , "authenticated" , {
+        httpOnly : false,
+        sameSite : process.env.NODE_ENV === 'production' ? "none" : "lax",
+        secure: process.env.NODE_ENV === 'production' ? true : false
+        }).status(200).json({
+            message: existingUser ? "User logged in" : "User registered",
+            token
+        });
     return;
   } catch (error) {
     res.status(500).json({
@@ -203,12 +238,23 @@ userRouter.post("/send-code" , async (req : Request , res : Response)=>{
                 }
             })
         }
+        
+        // Check if email configuration is available
+        if (!Env.EMAIL_SERVICE || !Env.EMAIL_USER || !Env.EMAIL_PASS) {
+            console.log(`⚠️  Email not configured. Code for ${email}: ${code}`);
+            res.status(200).json({
+                message: "Code sent successfully (development mode)",
+                code: process.env.NODE_ENV !== 'production' ? code : undefined
+            });
+            return;
+        }
+
         // code to send code
         const transporter = nodemailer.createTransport({
-            service: process.env.EMAIL_SERVICE || 'gmail',
+            service: Env.EMAIL_SERVICE,
             auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS,
+                user: Env.EMAIL_USER,
+                pass: Env.EMAIL_PASS,
             },
         });
 
@@ -221,15 +267,27 @@ userRouter.post("/send-code" , async (req : Request , res : Response)=>{
             });
         }
 
-        await sendMail()
-
+        try {
+            await sendMail();
+            console.log(`✅ Email sent successfully to ${email}`);
+        } catch (emailError) {
+            console.error(`❌ Failed to send email to ${email}:`, emailError);
+            // Still return success but log the email error  
+            res.status(200).json({
+                message: "Code generated successfully (email delivery failed)",
+                code: process.env.NODE_ENV !== 'production' ? code : undefined
+            });
+            return;
+        }
 
         res.status(200).json({
             message : "code sent successfully"
         })
     } catch (error) {
+        console.error("❌ Error in send-code endpoint:", error);
         res.status(500).json({
-            message : "Internal server error " , error
+            message : "Internal server error",
+            error: process.env.NODE_ENV !== 'production' ? error : undefined
         })
     }
 })
@@ -290,12 +348,24 @@ userRouter.post("/verify-code" , async (req : Request , res : Response)=>{
 
         const token = jwt.sign({email : user.email , userId :user.id },jwt_secret)
 
+        // Set httpOnly + mirror cookies
         res.cookie("token" , token , {
             httpOnly : true,
-            sameSite : "lax",
-            secure : false
+            sameSite : process.env.NODE_ENV === 'production' ? "none" : "lax",
+            secure: process.env.NODE_ENV === 'production' ? true : false
+        })
+        .cookie("ws_token" , token , {
+            httpOnly : false,
+            sameSite : process.env.NODE_ENV === 'production' ? "none" : "lax",
+            secure: process.env.NODE_ENV === 'production' ? true : false
+        })
+        .cookie("auth_status" , "authenticated" , {
+            httpOnly : false,
+            sameSite : process.env.NODE_ENV === 'production' ? "none" : "lax",
+            secure: process.env.NODE_ENV === 'production' ? true : false
         }).status(200).json({
             message : "verified and user created!!",
+            token
         })
     } catch (error) {
         res.status(500).json({
@@ -305,10 +375,23 @@ userRouter.post("/verify-code" , async (req : Request , res : Response)=>{
 })
 
 userRouter.get('/logout' , async (req : Request , res : Response)=>{
+    // Clear httpOnly token cookie
     res.clearCookie("token" , {
         httpOnly : true,
-        sameSite : 'lax',
-        secure : false
+        sameSite : process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        secure: process.env.NODE_ENV === 'production' ? true : false
+    })
+    // Clear non-httpOnly mirror
+    .clearCookie("ws_token" , {
+        httpOnly : false,
+        sameSite : process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        secure: process.env.NODE_ENV === 'production' ? true : false
+    })
+    // Clear accessible auth status cookie
+    .clearCookie("auth_status" , {
+        httpOnly : false,
+        sameSite : process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        secure: process.env.NODE_ENV === 'production' ? true : false
     })
 
     res.status(200).json({

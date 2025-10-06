@@ -24,6 +24,14 @@ const handler = NextAuth({
     async session({ session }) {
       return session;
     },
+    async signIn() {
+      // Redirect to post-oauth after successful Google sign-in
+      return true;
+    },
+    async redirect({ baseUrl }) {
+      // Always bring user to root (frontend will route elsewhere after state loads)
+      return baseUrl + '/';
+    },
   },
 });
 

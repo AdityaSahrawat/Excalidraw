@@ -7,9 +7,10 @@ import RoomSkeleton from "./roomSkeleton";
 import RoomCard from "./roomCard";
 import CreateRoomDialog from "./createRoomDialog";
 import RoomActions from "./roomAction";
-import {DoorClosed, Loader2 ,ArrowLeft, LogIn, Copy, Eye, EyeOff} from "lucide-react";
+import {DoorClosed, Loader2 ,ArrowLeft, LogIn, Copy, Eye, EyeOff, LogOut} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { logout, logoutButtonClass } from "@/lib/auth";
 
 type Room = {
   id: string;
@@ -40,6 +41,7 @@ const Index = () => {
 
   const [joinedRooms, setJoinedRooms] = useState<JoinedRoom[]>([]);
   const [hiddenCodes, setHiddenCodes] = useState<Record<string, boolean>>({});
+  
   const fetchRooms = useCallback(() => {
     setLoading(true);
     setError(null);
@@ -137,7 +139,13 @@ const Index = () => {
             </p>
           </div>
           <div className="flex flex-col gap-4 w-full sm:w-auto">
-            <CreateRoomDialog roomCreated={roomCreated} setroomCreated={setroomCreated} onRoomCreated={fetchRooms} />
+            <div className="flex gap-2 items-center">
+              <CreateRoomDialog roomCreated={roomCreated} setroomCreated={setroomCreated} onRoomCreated={fetchRooms} />
+              <Button onClick={logout} variant="outline" className={`flex items-center gap-2 ${logoutButtonClass}`}>
+                <LogOut className="w-4 h-4" />
+                Logout
+              </Button>
+            </div>
             <form onSubmit={handleJoin} className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-end bg-gray-50 p-4 rounded-md border">
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-medium" htmlFor="join-room-id">Room ID</label>

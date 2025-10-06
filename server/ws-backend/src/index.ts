@@ -5,19 +5,9 @@ import {parse} from "cookie"
 
 import dotenv from "dotenv";
 dotenv.config();
-import { z } from 'zod';
 
-const wsEnvSchema = z.object({
-  JWT_SECRET: z.string().min(5, 'JWT_SECRET too short'),
-  WS_PORT: z.string().regex(/^\d+$/).optional(),
-});
-const wsParsed = wsEnvSchema.safeParse(process.env);
-if (!wsParsed.success) {
-  console.error('❌ Invalid WS env', wsParsed.error.format());
-  process.exit(1);
-}
-const jwt_Secret = wsParsed.data.JWT_SECRET;
-const ws_port = wsParsed.data.WS_PORT
+const jwt_Secret = process.env.JWT_SECRET!;
+const ws_port = process.env.WS_PORT!
 const MAX_MESSAGE_BYTES = 64 * 1024; // 64KB safety limit
 const wss = new WebSocketServer({ port : Number(ws_port)}, () => {
   console.log("WS Server running on port " + ws_port);
@@ -40,24 +30,31 @@ function checkUser(token: string): string | null {
 }
 
 
+// Enforce token: must be present either as cookie (same-origin deployments) or query param (?token=)
 wss.on('connection', async (ws, request) => {
-
-  const cookieHeader = request.headers.cookie
-
-  if(!cookieHeader){
-    ws.close(1000 , "no cookieHeader found");
+  let token: string | undefined;
+  const cookieHeader = request.headers.cookie;
+  if (cookieHeader) {
+    try {
+      const cookies = parse(cookieHeader);
+      token = cookies.token || cookies.ws_token; // allow mirror
+    } catch {/* ignore parse errors */}
+  }
+  if (!token && request.url) {
+    try {
+      const url = new URL(request.url, `http://${request.headers.host}`);
+      token = url.searchParams.get('token') || undefined;
+    } catch {/* ignore malformed url */}
+  }
+  if (!token) {
+    ws.close(4401, 'missing token');
     return;
   }
-  
-  const cookies = parse(cookieHeader)
-  const token = cookies.token;
-
-  if (!token) return ws.close(1000 , "token not found");
-  const userId = checkUser(token)
-
-
-  if (!userId) return ws.close(1000 , "userId not found");
-
+  const userId = checkUser(token);
+  if (!userId) {
+    ws.close(4401, 'invalid token');
+    return;
+  }
   const user: User = { ws, rooms: new Set(), userId };
   users.set(ws, user);
 
@@ -113,38 +110,20 @@ function ensureSubscribed(user: User, roomId: string): boolean {
 const messageHandlers: Record<string, (data: any, user: User) => Promise<void>> = {
   subscribe: async (data, user) => {
     const roomId = data.roomId;
-    if (!roomId){
-       return;
-    }
+    if (!roomId) return;
 
     try {
-      const isAdmin = await prismaClient.room.findFirst({
-        where: { id: roomId, adminId: user.userId }
-      });
-      const isJoined = await prismaClient.joinedRooms.findFirst({
-        where: {
-          roomId,
-          userId : user.userId  
-          }
-      });
+      const isAdmin = await prismaClient.room.findFirst({ where: { id: roomId, adminId: user.userId } });
+      const isJoined = await prismaClient.joinedRooms.findFirst({ where: { roomId, userId: user.userId } });
 
       if (isAdmin || isJoined) {
-        user.rooms.add(data.roomId);
-        user.ws.send(JSON.stringify({
-          type : "subscribed",
-          reason : "You are subscribed to this room"
-        }))
+        user.rooms.add(roomId);
+        user.ws.send(JSON.stringify({ type: 'subscribed', reason: 'You are subscribed to this room' }));
       } else {
-        user.ws.send(JSON.stringify({
-          type : "unauthorized",
-          reason : "You are not part of this room"
-        }))
+        user.ws.send(JSON.stringify({ type: 'unauthorized', reason: 'You are not part of this room' }));
       }
-    } catch (error) {
-      user.ws.send(JSON.stringify({
-        type : "unauthorized",
-        reason : "Internal server error "
-      }))
+    } catch {
+      user.ws.send(JSON.stringify({ type: 'unauthorized', reason: 'Internal server error' }));
     }
 
 

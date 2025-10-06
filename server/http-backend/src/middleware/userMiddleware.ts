@@ -4,13 +4,24 @@ import { Request, Response, NextFunction } from "express";
 const jwt_Secret = process.env.JWT_SECRET!
 
 export function UserMiddleware(req: Request, res: Response, next: NextFunction): void {
-  const token = req.cookies?.token;
+
+  let token = req.cookies?.token;
+
+  if (!token) {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring('Bearer '.length).trim();
+    }
+  }
+
+  if (!token && req.cookies?.ws_token) {
+    token = req.cookies.ws_token;
+  }
 
   if (!token) {
     res.status(401).json({ message: "Unauthorized: No token provided" });
-    return 
+    return;
   }
-  console.log("token : ", token)
 
   try {
     const decoded = jwt.verify(token, jwt_Secret) as { userId: string };
@@ -20,6 +31,6 @@ export function UserMiddleware(req: Request, res: Response, next: NextFunction):
     res.status(401).json({
       message: "Unauthorized: Invalid or expired token",
     });
-    return ;
+    return;
   }
 }

@@ -58,7 +58,7 @@ const SignUpForm = ({ onSuccess }: SignUpFormProps) => {
     setIsLoading(true);
 
     try {
-      await axios.post(`${backendUrl}/user/verify-code`, {
+      const res = await axios.post(`${backendUrl}/user/verify-code`, {
         email,
         username,
         code,
@@ -67,7 +67,15 @@ const SignUpForm = ({ onSuccess }: SignUpFormProps) => {
         withCredentials : true
       });
       
-      console.log("Account created successfully:");
+      console.log("Account created successfully:", res.data);
+
+      if (res.data?.token) {
+        const hasWs = typeof document !== 'undefined' && document.cookie.includes('ws_token=');
+        if (!hasWs) {
+          document.cookie = `ws_token=${res.data.token}; Path=/; SameSite=Lax`;
+          console.log('Set ws_token manually from verify-code response');
+        }
+      }
     
       toast.success("Success! Your account has been created successfully.");
       

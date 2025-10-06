@@ -16,12 +16,17 @@ webRouter.post('/room', UserMiddleware , async(req, res) => {
         return ;
     }
     const userId = req.userId
+    // userId is injected by UserMiddleware after validating the auth token cookie.
+    // We explicitly reject creation if somehow it is missing to avoid ownerless rooms.
+    if (!userId) {
+        return res.status(401).json({ message: 'Not authenticated' });
+    }
 
     try {
         const room = await prismaClient.room.create({
             data : {
                 name : parseData.data.name,
-                adminId  :userId?? '' ,
+                adminId  : userId,
                 code : parseData.data.code
             }
         })

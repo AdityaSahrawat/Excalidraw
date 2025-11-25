@@ -4,13 +4,13 @@
 (due to clearCanvas fn) = pending
 
 3. on react strict mode , due to double reload two canvas ref are created which cause
- twice mouseup and mousedown in sigle event = disabled reactstrictmode for now = pending
+ twice mouseup and mousedown in sigle event = disabled reactstrictmode for now = done
 
-4. add types to messages in ws = pending
+4. add types to messages in ws = done
 
 5. add resizing = done
 
-6. line/arrow selection and resizing error fix
+6. line/arrow selection and resizing error fix = done
 
 7. auto selection of created shape = done
 
@@ -18,7 +18,7 @@
 
 9. add current zoom value = done
 
-10. add transparent shape feature =
+10. add transparent shape feature = done
 
-11. solve 10000... bugs!!
+11. solve bugs!!
 

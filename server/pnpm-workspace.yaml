@@ -1,5 +1,0 @@
-packages:
-  - http-backend
-  - ws-backend
-  - database
-  - zod-validation

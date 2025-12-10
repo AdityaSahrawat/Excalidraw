@@ -1,0 +1,9 @@
+// http-backend/tsconfig.build.json
+{
+  "files": [],
+  "references": [
+    { "path": "../zod-validation" },
+    { "path": "../database" },
+    { "path": "." }
+  ]
+}

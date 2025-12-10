@@ -1,0 +1,61 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+model User {
+  id           String         @id @default(uuid())
+  email        String         @unique
+  username     String
+  provider     String
+  password     String?
+  avatar       String?
+  rooms        Room[]         @relation("AdminRooms")     
+  joinedRooms  JoinedRooms[]
+  Elements      Element[]
+}
+
+model Room {
+  id           String         @id @default(cuid())    
+  name         String         @unique
+  createdAt    DateTime       @default(now())
+  code         String
+  adminId      String
+  admin        User           @relation("AdminRooms", fields: [adminId], references: [id])
+  joinedRooms  JoinedRooms[]
+  Elements      Element[]
+
+}
+
+model JoinedRooms {
+  id         String             @id @default(uuid())
+  userId     String
+  roomId     String         
+  joinedAt   DateTime        @default(now())
+  user       User            @relation(fields: [userId], references: [id])
+  room       Room            @relation(fields: [roomId], references: [id])
+
+  @@unique([userId, roomId])
+}
+
+model Element {
+  id        Int           @id @default(autoincrement())
+  shapeId   String        @unique
+  shape     String
+  userId    String
+  roomId    String
+  room      Room        @relation(fields: [roomId] , references: [id])
+  user      User        @relation(fields: [userId] , references: [id])
+  
+
+}
+
+model VerificationEmail {
+  id         Int             @id @default(autoincrement())
+  email      String          @unique
+  code       String
+  expireAt   DateTime
+}

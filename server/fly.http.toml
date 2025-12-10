@@ -1,0 +1,27 @@
+# fly.toml app configuration file generated for http-backend-app on 2025-07-21T17:42:19+05:30
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'http-backend-app'
+primary_region = 'bom'
+
+[build]
+  dockerfile = 'http-backend/Dockerfile'
+
+[env]
+  CLIENT_URL = "https://sketchhub.fly.dev"
+  PORT = "3009"
+
+[http_service]
+  internal_port = 3009
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ['app']
+
+[[vm]]
+  memory = '512mb'
+  cpu_kind = 'shared'
+  cpus = 1

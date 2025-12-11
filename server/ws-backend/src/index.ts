@@ -8,7 +8,7 @@ dotenv.config();
 
 const jwt_Secret = process.env.JWT_SECRET!;
 const ws_port = process.env.WS_PORT!
-const MAX_MESSAGE_BYTES = 64 * 1024; // 64KB safety limit
+const MAX_MESSAGE_BYTES = 64 * 1024; 
 const wss = new WebSocketServer({ port : Number(ws_port)}, () => {
   console.log("WS Server running on port " + ws_port);
 });
@@ -30,21 +30,20 @@ function checkUser(token: string): string | null {
 }
 
 
-// Enforce token: must be present either as cookie (same-origin deployments) or query param (?token=)
 wss.on('connection', async (ws, request) => {
   let token: string | undefined;
   const cookieHeader = request.headers.cookie;
   if (cookieHeader) {
     try {
       const cookies = parse(cookieHeader);
-      token = cookies.token || cookies.ws_token; // allow mirror
-    } catch {/* ignore parse errors */}
+      token = cookies.token || cookies.ws_token;
+    } catch {}
   }
   if (!token && request.url) {
     try {
       const url = new URL(request.url, `http://${request.headers.host}`);
       token = url.searchParams.get('token') || undefined;
-    } catch {/* ignore malformed url */}
+    } catch {}
   }
   if (!token) {
     ws.close(4401, 'missing token');

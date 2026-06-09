@@ -33,7 +33,6 @@ export default function CanvasPage({ params }: { params: Promise<{ roomId: strin
 
   const ensureOAuthToken = useCallback(async (): Promise<boolean> => {
     if (ensuringRef.current) return false;
-    // If session not authenticated, nothing to do here
     if (sessionStatus !== 'authenticated') return false;
     const email = typeof session?.user?.email === 'string' ? session.user.email : undefined;
     if (!email) return false;
@@ -43,14 +42,12 @@ export default function CanvasPage({ params }: { params: Promise<{ roomId: strin
       const usernameGuess = email.split('@')[0] || 'user';
       const resp = await axios.post(`${backendUrl}/user/oauth`, { email, username: usernameGuess }, { withCredentials: true });
       const respToken: string | undefined = resp.data?.token;
-      // Manual mirror if cookie race
       if (respToken && typeof document !== 'undefined') {
         const hasWs = document.cookie.split(';').some(c => c.trim().startsWith('ws_token='));
         if (!hasWs) {
           document.cookie = `ws_token=${respToken}; Path=/; SameSite=${process.env.NODE_ENV === 'production' ? 'None' : 'Lax'}; ${process.env.NODE_ENV === 'production' ? 'Secure;' : ''}`;
         }
       }
-      // Wait a short moment for Set-Cookie to flush (even if we set manually, to keep ordering)
       await new Promise(r => setTimeout(r, 120));
       const token = readWsToken();
       if (token) return true;
@@ -67,12 +64,6 @@ export default function CanvasPage({ params }: { params: Promise<{ roomId: strin
   useEffect(() => {
     if (!roomId || !isHydrated) return;
     if (attemptedConnectRef.current) return;
-    /*
-      NOTE: We intentionally exclude ensureOAuthToken, readWsToken, connectionError, socket etc.
-      - ensureOAuthToken & readWsToken are stable (useCallback with stable deps)
-      - connectionError / socket changes should not re-trigger initial connection attempt
-      This effect runs once per mount / roomId change.
-    */
     const attachWsHandlers = (socket: WebSocket) => {
       socket.onopen = () => {
         console.log("✅ WebSocket Connected!");
@@ -83,7 +74,7 @@ export default function CanvasPage({ params }: { params: Promise<{ roomId: strin
       socket.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          console.log("📨 Received message:", data);
+          console.log("Received message:", data);
           if (data.type === "unauthorized") {
             setConnectionError(data.reason || "Unauthorized access.");
             setIsAuthorized(false);
@@ -99,18 +90,18 @@ export default function CanvasPage({ params }: { params: Promise<{ roomId: strin
             socket.close();
           }
         } catch (err) {
-          console.error("❌ Failed to parse message:", err);
+          console.error("Failed to parse message:", err);
           setConnectionError("Invalid response from server.");
           setIsLoading(false);
         }
       };
       socket.onerror = (error) => {
-        console.error("❌ WebSocket Error:", error);
+        console.error("WebSocket Error:", error);
         setConnectionError("Failed to connect to the server.");
         setIsLoading(false);
       };
       socket.onclose = (event) => {
-        console.warn(`⚠️ WebSocket closed. Code: ${event.code}, Reason: ${event.reason}`);
+        console.warn(`WebSocket closed. Code: ${event.code}, Reason: ${event.reason}`);
         if (!connectionError && !isAuthorized) {
           if (subscriptionSent) {
             setConnectionError("Connection lost while waiting for room authorization.");
@@ -136,7 +127,6 @@ export default function CanvasPage({ params }: { params: Promise<{ roomId: strin
 
     const attemptConnectionFlow = async () => {
       attemptedConnectRef.current = true;
-      // 1. Try immediate token
       let token = readWsToken();
       if (token) {
         connect(token, 'initial');

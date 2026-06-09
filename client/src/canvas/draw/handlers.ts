@@ -24,7 +24,6 @@ export const HandleMouseDown = (ctx :CanvasRenderingContext2D , canvas : HTMLCan
 
 
         const element = getElementOnPointer(canvasX , canvasY , state.existingShapes)
-        // setSelectedShape(element ?? null) // undefined to null
         state.selectedShape = element ?? null
         console.log("selected shape :  " , state.selectedShape)
         refreshCanvas(ctx , canvas , state.existingShapes, state.selectedShape, state.canvasOffsetX , state.canvasOffsetY , state.canvasScale)
@@ -247,7 +246,6 @@ export const HandleMouseMove = (e:MouseEvent , state : State , socket : WebSocke
     const height = canvasY - state.startY;
     if (state.rafId) cancelAnimationFrame(state.rafId);
     state.rafId = requestAnimationFrame(() => {
-        // Redraw base
         refreshCanvas(ctx , canvas , state.existingShapes , state.selectedShape, state.canvasOffsetX , state.canvasOffsetY , state.canvasScale);
 
         // Draw the preview on top within the same frame
@@ -529,13 +527,11 @@ function handleRectResize(shape: Shape, handle: string, deltaX: number, deltaY: 
 function handleCircleResize(shape: Shape, handle: string, deltaX: number, deltaY: number) {
   if (shape.type !== "Circle") return;
 
-  // 1. Convert circle to bounding box
   let boxX = shape.x - shape.radius;
   let boxY = shape.y - shape.radius;
   let boxW = shape.radius * 2;
   let boxH = shape.radius * 2;
 
-  // 2. Resize box like a rectangle
   switch (handle) {
     case "top-left":
       boxX += deltaX;

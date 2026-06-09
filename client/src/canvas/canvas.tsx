@@ -65,10 +65,8 @@ const Canvas = ({ roomId, socket }: CanvasProps) => {
     });
   }, [roomId, socket]);
 
-  // Stop default browser zoom (Ctrl +, Ctrl -, Ctrl 0) and map to canvas zoom
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      // Avoid interfering with typing in inputs/textareas/contentEditable
       const target = e.target as HTMLElement | null;
       if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
         return;

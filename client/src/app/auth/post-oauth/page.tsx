@@ -30,33 +30,26 @@ export default function PostAuthPage() {
             withCredentials: true,
           });
           
-          console.log("✅ OAuth response:", response.data);
-          
           // Verify token was set in cookies
           const cookies = document.cookie;
-          console.log("🍪 Cookies after OAuth:", cookies);
-          
           if (cookies.includes('token=')) {
             // Ensure ws_token exists for WS connection fallback
             if (!cookies.includes('ws_token=') && response.data?.token) {
               document.cookie = `ws_token=${response.data.token}; Path=/; SameSite=Lax`;
               console.log('Set ws_token manually from oauth response');
             }
-            console.log("✅ JWT token successfully set in cookies");
+            
             setStatus("success");
             setMessage("Login successful! Redirecting...");
             
-            // Small delay to show success message
             setTimeout(() => {
               router.replace("/rooms");
             }, 1000);
           } else {
-            console.warn("⚠️ Token not found in cookies, but OAuth succeeded");
             setStatus("success");
             router.replace("/rooms");
           }
         } else {
-          console.log("❌ No session found, redirecting to auth");
           setStatus("error");
           setMessage("Authentication failed. Redirecting...");
           setTimeout(() => {

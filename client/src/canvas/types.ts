@@ -52,7 +52,7 @@ export type Shape = {
 export type AllShapes = "Rect" | "Pencil" | "Circle" | "Line" | "Arrow" | "Pointer" | "Hand"
 
 export type State = {
-    existingShapes: Shape[]; // Assuming getExistingShapes returns Shape[]
+    existingShapes: Shape[];
     selectedShape: Shape | null;
     isDrawing: boolean;
     currentPencilPath: { x: number; y: number }[];
@@ -61,7 +61,7 @@ export type State = {
     startY: number;
     offsetX: number;
     offsetY: number;
-    movedShapeIndex: string; // "-1" as string, or you can use number if it's an index
+    movedShapeIndex: string;
     resizeHandle : string | null,
     endOffsetX : number,
     endOffsetY : number ,
@@ -70,7 +70,6 @@ export type State = {
     canvasScale : number , 
     lastPanx : number
     lastPany : number
-    // Perf helpers
     rafId?: number | null;
     canvasRect?: { left: number; top: number; width: number; height: number } | null;
 }

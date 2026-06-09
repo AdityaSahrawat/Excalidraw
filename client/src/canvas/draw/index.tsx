@@ -141,7 +141,6 @@ const state: State = {
   function setZoom(scale: number) {
     const clamped = Math.min(5, Math.max(0.2, scale));
     const rect = canvas.getBoundingClientRect();
-    // Zoom to center
     const centerX = rect.width / 2;
     const centerY = rect.height / 2;
     const prevScale = state.canvasScale;

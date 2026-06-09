@@ -3,8 +3,8 @@ import {Shape, State } from "../types";
 
 
 export function refreshCanvas( ctx:CanvasRenderingContext2D ,canvas: HTMLCanvasElement, existingShapes : Shape[] , selectedShape: Shape | null , canvasOffSetX : number , canvasOffSetY: number , canvasScale: number ){
-    ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform
-    ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear entire visible canvas
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.save();
     ctx.globalAlpha = 1;
     ctx.fillStyle = 'rgba(0,0,0)';
@@ -102,10 +102,8 @@ export function drawShape(ctx : CanvasRenderingContext2D , shape : Shape){
     ctx.restore();
 }
 
-export function getElementOnPointer(x : number , y : number , shapes : Shape[]){    
-    // const elements = shapes.find(isWithinElement(x , y , shape))
+export function getElementOnPointer(x : number , y : number , shapes : Shape[]){ 
     const shape =  shapes.find(shape => isWithinElement(x , y , shape))
-    // console.log("shape selected:  " , shape)
     return shape
 }
 
@@ -130,9 +128,6 @@ function isWithinElement(x: number , y: number , shape : Shape) : boolean{
         const a = {x:shape.x , y : shape.y}
         const b = {x : shape.endx +x , y : y+ shape.endy}
         const c = { x, y }
-        // const offSet = getDistance(a , b) - getDistance(b , c) - getDistance(a , c);
-        // const threshold = 0.1 * getDistance(a,b);
-        // return offSet < threshold
     
         return distanceToLineSegment(a, b, c) < 10;
     }
@@ -191,7 +186,6 @@ function distanceToLineSegment(a: {x : number , y : number}, b: {x : number , y 
     return Math.sqrt(dx * dx + dy * dy);
 }
 
-// Fix for the TypeScript error - replace String with string type
 export function drawSelectionUI(
   ctx: CanvasRenderingContext2D,
   shape: Shape
@@ -203,34 +197,28 @@ export function drawSelectionUI(
 
   ctx.save();
   
-  // ---- 1. Draw Bounding Box ----
-  ctx.strokeStyle = "#3b82f6"; // Blue border
+  ctx.strokeStyle = "#3b82f6";
   ctx.lineWidth = 1;
   
   if (shape.type === "Line" || shape.type === "Arrow") {
-    // Draw selection for Line/Arrow
     ctx.beginPath();
     ctx.moveTo(shape.x, shape.y);
     ctx.lineTo(shape.x + shape.endx, shape.y + shape.endy);
     ctx.stroke();
     
-    // Draw handles at both ends
     ctx.fillStyle = "#ffffff";
     ctx.strokeStyle = "#3b82f6";
     
-    // Start point handle
     ctx.beginPath();
     ctx.arc(shape.x, shape.y, handleSize/2, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
     
-    // End point handle
     ctx.beginPath();
     ctx.arc(shape.x + shape.endx, shape.y + shape.endy, handleSize/2, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
     
-    // Rotation handle (midpoint + offset)
     const midX = shape.x + shape.endx / 2;
     const midY = shape.y + shape.endy / 2;
     const angle = Math.atan2(shape.endy, shape.endx);
@@ -246,9 +234,8 @@ export function drawSelectionUI(
     return;
   }
 
-  // Original selection UI for other shapes
   ctx.strokeRect(
-    bounds.x - 6, // Slightly larger than shape
+    bounds.x - 6,
     bounds.y - 6,
     bounds.width + 12,
     bounds.height + 12
@@ -315,7 +302,6 @@ export function getShapeBounds(shape: Shape): {
 
     case "Line":
     case "Arrow":
-      // For lines/arrows, use start/end points
       const minX = Math.min(shape.x, shape.x + shape.endx);
       const minY = Math.min(shape.y, shape.y + shape.endy);
       return {
@@ -326,7 +312,6 @@ export function getShapeBounds(shape: Shape): {
       };
 
     case "Pencil":
-      // Calculate min/max from all points
       let minXP = Infinity, minYP = Infinity;
       let maxXP = -Infinity, maxYP = -Infinity;
       

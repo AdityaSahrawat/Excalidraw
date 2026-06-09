@@ -3,15 +3,13 @@ import {SessionProvider, useSession} from "next-auth/react"
 import { useEffect, useRef } from 'react'
 import axios from 'axios'
 
-// Internal component to ensure backend OAuth user + cookies are initialized
 function OAuthEnsure() {
   const { data: session, status } = useSession();
   const attemptedRef = useRef(false);
   useEffect(() => {
-    if (attemptedRef.current) return; // avoid duplicate attempts
-    if (status !== 'authenticated') return; // only when session available
+    if (attemptedRef.current) return;
+    if (status !== 'authenticated') return;
 
-    // If ws_token already present, nothing to do
     if (typeof document !== 'undefined') {
       const hasWsToken = document.cookie.split(';').some(c => c.trim().startsWith('ws_token='));
       if (hasWsToken) return;
@@ -24,12 +22,11 @@ function OAuthEnsure() {
     if (!email) return;
 
     attemptedRef.current = true;
-    // Optional username fallback: part before @ or 'user'
     const usernameGuess = email.split('@')[0] || 'user';
     axios.post(`${backendUrl}/user/oauth`, { email, username: usernameGuess }, { withCredentials: true })
       .then(res => {
         console.log('[OAuthEnsure] Initialized backend OAuth user + cookies');
-        // If for some reason ws_token not yet visible, set a manual mirror from response token
+       
         const respToken: string | undefined = res.data?.token;
         if (respToken && typeof document !== 'undefined') {
           const hasWsToken = document.cookie.split(';').some(c => c.trim().startsWith('ws_token='));
@@ -40,7 +37,7 @@ function OAuthEnsure() {
       })
       .catch(err => {
         console.warn('[OAuthEnsure] Failed to initialize backend OAuth user', err?.response?.data || err?.message);
-        attemptedRef.current = false; // allow retry
+        attemptedRef.current = false;
       });
   }, [status, session]);
   return null;

@@ -17,7 +17,6 @@ const Index = () => {
     return `${b}/${p}`;
   };
   
-  // Helpful debug once; keep quiet in normal runs
   if (process.env.NODE_ENV !== 'production') {
     console.log('Backend URL:', backendUrl);
   }
@@ -27,7 +26,6 @@ const Index = () => {
 
     async function checkIsLoggedIn() {
       if (!backendUrl) {
-        // No backend configured – treat as signed out but don't spam toasts repeatedly
         if (!cancelled) {
           setIsAuth(false);
           setIsLoading(false);
@@ -58,8 +56,6 @@ const Index = () => {
     };
   }, [backendUrl])
 
-
-  // Using shared logout function from lib/auth.ts
   
 
   if (isLoading) {

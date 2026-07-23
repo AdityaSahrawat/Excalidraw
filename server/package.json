@@ -7,8 +7,10 @@
     "typescript": "^5.8.2"
   },
   "scripts": {
-  "build": "echo 'no build at root'"
-},
+    "build": "echo 'no build at root'",
+    "test": "pnpm -r --if-present run test",
+    "db:generate": "pnpm --filter database exec prisma generate"
+  },
 
   "workspaces" : [
     "http-backend",

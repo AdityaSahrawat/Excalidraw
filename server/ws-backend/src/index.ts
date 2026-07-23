@@ -1,15 +1,15 @@
 import { WebSocket, WebSocketServer } from 'ws';
 import jwt from "jsonwebtoken";
 import { prismaClient } from "@db/index";
-import {parse} from "cookie"
+import { parse } from "cookie"
 
 import dotenv from "dotenv";
 dotenv.config();
 
 const jwt_Secret = process.env.JWT_SECRET!;
 const ws_port = process.env.WS_PORT!
-const MAX_MESSAGE_BYTES = 64 * 1024; 
-const wss = new WebSocketServer({ port : Number(ws_port)}, () => {
+const MAX_MESSAGE_BYTES = 64 * 1024;
+const wss = new WebSocketServer({ port: Number(ws_port) }, () => {
   console.log("WS Server running on port " + ws_port);
 });
 interface User {
@@ -37,13 +37,15 @@ wss.on('connection', async (ws, request) => {
     try {
       const cookies = parse(cookieHeader);
       token = cookies.token || cookies.ws_token;
-    } catch {}
+    } catch {
+
+    }
   }
   if (!token && request.url) {
     try {
       const url = new URL(request.url, `http://${request.headers.host}`);
       token = url.searchParams.get('token') || undefined;
-    } catch {}
+    } catch { }
   }
   if (!token) {
     ws.close(4401, 'missing token');
@@ -126,7 +128,7 @@ const messageHandlers: Record<string, (data: any, user: User) => Promise<void>> 
     }
 
 
-    
+
   },
 
   unsubscribe: async (data, user) => {

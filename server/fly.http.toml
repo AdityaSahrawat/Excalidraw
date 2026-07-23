@@ -4,7 +4,7 @@
 #
 
 app = 'http-backend-app'
-primary_region = 'bom'
+primary_region = 'maa'
 
 [build]
   dockerfile = 'http-backend/Dockerfile'

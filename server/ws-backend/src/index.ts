@@ -184,6 +184,7 @@ const messageHandlers: Record<string, (data: any, user: User) => Promise<void>> 
       where: { roomId, shapeId },
       data: { shape: serialized }
     });
+    // brodacast
     broadcastToRoom(roomId, null, {
       type: "moveShape",
       roomId,

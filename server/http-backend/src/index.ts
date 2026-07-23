@@ -27,7 +27,7 @@ app.use(
         callback(null, true);
         return;
       }
-      
+
       if (allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
@@ -41,9 +41,9 @@ app.use(
 );
 
 app.use(cookieParser())
-
-app.use("/v1/user" , userRouter)
-app.use("/v1/web" , webRouter )
+//routes
+app.use("/v1/user", userRouter)
+app.use("/v1/web", webRouter)
 
 
 

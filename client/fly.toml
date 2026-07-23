@@ -4,7 +4,7 @@
 #
 
 app = 'sketchhub'
-primary_region = 'bom'
+primary_region = 'maa'
 
 [build.args]
 NEXT_PUBLIC_BACKEND_URL = "https://http-backend-app.fly.dev/v1"

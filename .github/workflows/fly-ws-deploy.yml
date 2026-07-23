@@ -39,6 +39,12 @@ jobs:
         working-directory: ./server
         run: pnpm --filter database exec prisma generate
 
+      - name: Build dependent workspace packages
+        working-directory: ./server
+        run: |
+          pnpm --filter database build
+          pnpm --filter zod-validation build
+
       - name: Run Unit Tests
         working-directory: ./server
         run: pnpm --filter zod-validation test

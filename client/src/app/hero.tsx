@@ -6,10 +6,10 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
 const Hero = () => {
-    const router = useRouter()
+  const router = useRouter()
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center max-w-7xl mx-auto">
-      {/* Left Content */}
+      {/* Left Contents */}
       <div className="space-y-8">
         <div className="space-y-6">
           <h1 className="text-5xl lg:text-6xl font-bold text-gray-900 leading-tight">
@@ -21,10 +21,10 @@ const Hero = () => {
         </div>
 
         <div className="flex gap-4">
-          <Button onClick={()=>router.push('/rooms')} className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg">
+          <Button onClick={() => router.push('/rooms')} className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg">
             Start Drawing
           </Button>
-          <Button onClick={()=>router.push('/canvas/global')} variant="outline" className="px-8 py-3 text-lg border-gray-300">
+          <Button onClick={() => router.push('/canvas/global')} variant="outline" className="px-8 py-3 text-lg border-gray-300">
             View Demo (global canvas)
           </Button>
         </div>
@@ -78,11 +78,11 @@ const Hero = () => {
             </div>
           </div>
 
-          <Image 
+          <Image
             src="/home1.png"
             alt="Whiteboard mockup showing collaborative drawing features"
-            width={800} 
-            height={600} 
+            width={800}
+            height={600}
             className="w-full h-auto rounded"
           />
 

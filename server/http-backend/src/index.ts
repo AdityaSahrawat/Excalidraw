@@ -41,7 +41,7 @@ app.use(
 );
 
 app.use(cookieParser())
-//routesss
+//routessss
 app.use("/v1/user", userRouter)
 app.use("/v1/web", webRouter)
 

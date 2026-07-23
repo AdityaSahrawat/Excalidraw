@@ -9,7 +9,7 @@ const Hero = () => {
   const router = useRouter()
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center max-w-7xl mx-auto">
-      {/* Left Contents */}
+      {/* Left Contentss */}
       <div className="space-y-8">
         <div className="space-y-6">
           <h1 className="text-5xl lg:text-6xl font-bold text-gray-900 leading-tight">

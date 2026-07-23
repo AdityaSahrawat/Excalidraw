@@ -4,19 +4,25 @@ import { useEffect, useState } from 'react';
 import Hero from './hero';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
+import { useSession } from 'next-auth/react';
 import { logout } from '@/lib/auth';
 import { toast } from 'sonner';
+import { LogOut, LogIn, Loader2 } from 'lucide-react';
+
 const Index = () => {
   const [isAuth, setIsAuth] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const router = useRouter()
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const { status: sessionStatus } = useSession();
+  const router = useRouter();
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+
   const buildUrl = (base: string, path: string) => {
     const b = base.replace(/\/$/, '');
     const p = path.replace(/^\//, '');
     return `${b}/${p}`;
   };
-  
+
   if (process.env.NODE_ENV !== 'production') {
     console.log('Backend URL:', backendUrl);
   }
@@ -54,11 +60,23 @@ const Index = () => {
     return () => {
       cancelled = true;
     };
-  }, [backendUrl])
+  }, [backendUrl]);
 
-  
+  const userIsAuthenticated = isAuth || sessionStatus === 'authenticated';
 
-  if (isLoading) {
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await logout();
+      setIsAuth(false);
+    } catch (err) {
+      console.error("Logout error:", err);
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
+
+  if (isLoading && sessionStatus === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -76,17 +94,28 @@ const Index = () => {
             <span className="text-xl font-bold text-gray-800">Whiteboard</span>
           </div>
 
-          {isAuth ? (
-            <button onClick={()=>logout()} className='text-gray-600 border-black shadow-lg hover:cursor-pointer hover:text-gray-900'>
-              Log out
+          {userIsAuthenticated ? (
+            <button
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-red-500 hover:bg-red-600 active:bg-red-700 rounded-lg shadow-sm transition-colors cursor-pointer disabled:opacity-50"
+            >
+              {isLoggingOut ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <LogOut className="w-4 h-4" />
+              )}
+              <span>{isLoggingOut ? 'Logging out...' : 'Log out'}</span>
             </button>
           ) : (
-            <button onClick={()=>{router.push('/auth')}} className='text-gray-600 border-2 p-2 rounded-md shadow-sm hover:cursor-pointer hover:text-gray-900'>
-              Sign in
+            <button
+              onClick={() => router.push('/auth')}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 active:bg-gray-100 rounded-lg shadow-sm transition-colors cursor-pointer"
+            >
+              <LogIn className="w-4 h-4" />
+              <span>Sign in</span>
             </button>
-          )
-        }
-            
+          )}
         </nav>
       </header>
 
@@ -94,10 +123,10 @@ const Index = () => {
       <main className="flex-1 px-6 py-12">
         <div className="max-w-7xl mx-auto">
           <Hero />
-          
-          {isAuth && (
+
+          {userIsAuthenticated && (
             <div className="mt-16 text-center">
-              <div className="inline-flex items-center gap-2 px-6 py-3 bg-green-100 text-green-800 rounded-full border border-green-200">
+              <div className="inline-flex items-center gap-2 px-6 py-3 bg-green-100 text-green-800 rounded-full border border-green-200 shadow-xs">
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                 <span className="font-medium">Welcome back! You&apos;re authenticated and ready to create.</span>
               </div>

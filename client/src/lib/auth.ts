@@ -15,7 +15,11 @@ export const logout = async () => {
   try {
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
     if (backendUrl) {
-      await axios.get(`${backendUrl}/user/logout`, { withCredentials: true });
+      const cleanBase = backendUrl.replace(/\/$/, '');
+      const logoutUrl = cleanBase.endsWith('/v1')
+        ? `${cleanBase}/user/logout`
+        : `${cleanBase}/v1/user/logout`;
+      await axios.get(logoutUrl, { withCredentials: true });
       console.log("✅ Backend logout successful - JWT token cleared");
     }
   } catch (error: unknown) {
@@ -25,9 +29,10 @@ export const logout = async () => {
   }
   // Manually clear client-visible cookies regardless of backend result
   if (typeof document !== 'undefined') {
-    const expire = 'Max-Age=0; Path=/';
+    const expire = 'Max-Age=0; Path=/; SameSite=Lax';
     document.cookie = `ws_token=; ${expire}`;
     document.cookie = `auth_status=; ${expire}`;
+    document.cookie = `token=; ${expire}`;
   }
   // Clear NextAuth session silently (no redirect chain)
   await signOut({ redirect: false });
@@ -36,7 +41,6 @@ export const logout = async () => {
     if (window.location.pathname !== '/') {
       window.location.replace('/');
     } else {
-      // Soft reload to clear any client state referencing old session
       window.location.reload();
     }
   }
